@@ -3,12 +3,16 @@ package com.mylearning.greetingstreams.topology;
 import com.mylearning.greetingstreams.domain.Greeting;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Printed;
 import org.apache.kafka.streams.kstream.Produced;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Topology is a class in Kafka Streams that which basically holds the whole flow of the Kafka Streams
@@ -24,6 +28,7 @@ public class GreetingsTopology {
 
     // Source topic name
     public static String GREETINGS="greetings";
+    public static String GREETINGS_SPANISH="greetings-spanish";
 
     // Destination topic name
     public static String GREETINGS_UPPERCASE="greetings-uppercase";
@@ -40,9 +45,49 @@ public class GreetingsTopology {
         // this uses the consumer api
         KStream<String, String> greetingsStream = streamsBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), Serdes.String()));// when used with Consumed.with then first Serdes.String() key deserializer and second Serdes.String() is value deserializer
 
-        greetingsStream.print(Printed.<String, String>toSysOut().withLabel("GREETINGS-STREAM-LABEL"));
+        // good morning - Buenos días
+        KStream<String, String> greetingsSpanish = streamsBuilder.stream(GREETINGS_SPANISH, Consumed.with(Serdes.String(), Serdes.String()));
 
-        KStream<String, String> modifiedStream = greetingsStream.mapValues((readOnlyKey, value) -> value.toUpperCase());
+        greetingsStream.print(Printed.<String, String>toSysOut().withLabel("GREETINGS-STREAM-LABEL"));
+        greetingsSpanish.print(Printed.<String, String>toSysOut().withLabel("GREETINGS-SPANISH-LABEL"));
+
+        // using merge operator merging two kafka streams from two different kafka topics so that later down the line we can publish the events into another single kafka stream i.e. combining two kafka streams and perform operations and publish it into another topic
+        KStream<String, String> mergedKStream = greetingsStream.merge(greetingsSpanish);
+
+        mergedKStream.print(Printed.<String, String>toSysOut().withLabel("MERGED-KSTREAM-LABEL"));
+
+        // inside flatMap returning the list of Key-Value pairs and flatMap flattening the collection and return the individual pairs
+        KStream<String, String> modifiedStream = mergedKStream
+                //.filter((key,value) -> value.length() > 5)
+                /*.peek(((key, value) -> {
+                    log.info("after filter > key : {}, value : {}",key,value);
+                }))*/
+                //.filterNot((key,value) -> value.length() > 5)
+                .mapValues((readOnlyKey, value) -> value.toUpperCase())
+                .peek(((key, value) -> {
+                    log.info("after mapValues > key : {}, value : {}",key,value);
+                }))
+                //        .map((key,value) -> KeyValue.pair(key.toUpperCase(), value.toUpperCase()))
+                        /*.flatMap((key,value) -> {
+                            List<String> newValues = Arrays.asList(value.split(""));
+                            List<KeyValue<String, String>> keyValueList = newValues.stream()
+                                    .map(val -> KeyValue.pair(key.toUpperCase(), val.toUpperCase()))
+                                    .toList();
+                            return keyValueList;
+                        });*/
+                .flatMapValues((readOnlykey,value) -> {
+                    List<String> newValues = Arrays.asList(value.split(""));
+                    List<String> keyValueList = newValues.stream()
+                            .map(String::toUpperCase)
+                            .toList();
+                    return keyValueList;
+                })
+                .peek(((key, value) -> {
+                    log.info("after flatMapValues > key : {}, value : {}",key,value);
+                }))
+                ;
+        
+
         // var mergedStream = getStringGreetingKStream(streamsBuilder);
         //var mergedStream = getCustomGreetingKStream(streamsBuilder);
 
