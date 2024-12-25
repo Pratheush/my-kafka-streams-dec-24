@@ -6,11 +6,10 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Properties;
@@ -66,10 +65,10 @@ public class GreetingsStreamApp {
 
         //properties.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, StreamsSerializationExceptionHandler.class);
 
-        // Another way of configuring Kafka Serdes Key and Value Serializer and Deserializer if we don't specifically specify at topology with Consumed.with and Produced.with
+        // Another way of configuring Default Kafka Serdes Key and Value Serializer and Deserializer if we don't specifically specify at topology with Consumed.with() and Produced.with()
         // we can use this kind of configuration only when we are sure about that we are going to deal with only one particular key and value serializer and deserializer i.e. Default key and value Serde class
-        //properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
-        //properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
+        properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
+        properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
 
         createTopics(properties,List.of(GreetingsTopology.GREETINGS,GreetingsTopology.GREETINGS_UPPERCASE,GreetingsTopology.GREETINGS_SPANISH,GreetingsTopology.GREETINGS_SPANISH_UPPERCASE));
 
@@ -78,7 +77,7 @@ public class GreetingsStreamApp {
         // KafkaStreams this is the class which takes care of starting our application basically this is the one going to execute our topology
         // this is the one actually going to execute our topology the pipeline which involves Source-Processor and Stream-Processing-Logic and Sink-Processor
         // KafkaStreams instance start-up the application and properties tells which kafka cluster its going to interact with
-        var kafkaStreams=new KafkaStreams(greetingsTopology, properties);
+        KafkaStreams kafkaStreams=new KafkaStreams(greetingsTopology, properties);
 
         //kafkaStreams.setUncaughtExceptionHandler(new StreamProcessorCustomErrorHandler());
 
@@ -98,14 +97,14 @@ public class GreetingsStreamApp {
     // this function is going to create kafka-topic for us.
     // so using two Kafka-Topics 1 GREETINGS and 2 GREETINGS_UPPERCASE
     // here this is a programmatic way of creating Kafka-topics passing the topics-name as list and configs represents the broker details for this application
-    private static void createTopics(Properties config, List<String> greetings) {
+    private static void createTopics(Properties config, List<String> topicList) {
 
         AdminClient admin = AdminClient.create(config);
-        var partitions = 2;
+        int partitions = 2;
         short replication  = 1;
 
         // creating instance of NewTopic
-        List<NewTopic> newTopics = greetings
+        List<NewTopic> newTopics = topicList
                 .stream()
                 .map(topic -> {
                     return new NewTopic(topic, partitions, replication);

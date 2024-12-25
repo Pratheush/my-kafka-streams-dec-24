@@ -23,6 +23,18 @@ merge ::
 ![merge.png](screenshots%2F4.%20Operators%20in%20Kafka%20Streams%20using%20KStream%20API%2Fmerge.png)
 
 
+***
+
+### 5. Serialization and Deserialization in Kafka Streams
+
+serdes ::
+![serdes.png](screenshots%2F5.%20Serialization%20and%20Deserialization%20in%20Kafka%20Streams%2Fserdes.png)
+
+
+what's needed to build a Custom Serde ?
+* Serializer
+* Deserializer
+* Serde that holds the Serializer and Deserializer
 
 
 
