@@ -34,6 +34,7 @@ import org.apache.kafka.common.serialization.Serdes;
 public class GreetingSerdesFactory {
 
     private GreetingSerdesFactory() {}
+
     public static Serde<Greeting> greetingSerde(){
 
         return new GreetingSerde();
@@ -41,7 +42,7 @@ public class GreetingSerdesFactory {
 
     // in future if we want a different type we basically create another factory function then we change the type over here
     // like here we used Greeting we can use any other type accordingly
-    public static Serde<Greeting> greetingUsingGenerics(){
+    public static Serde<Greeting> greetingSerdeUsingGenerics(){
         JSONSerializer<Greeting> serializer = new JSONSerializer<>();
         JSONDeserializer<Greeting> deserializer=new JSONDeserializer<>(Greeting.class);
         return Serdes.serdeFrom(serializer, deserializer);

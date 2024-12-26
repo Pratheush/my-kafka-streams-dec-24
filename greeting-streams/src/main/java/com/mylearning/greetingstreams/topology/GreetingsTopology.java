@@ -182,12 +182,15 @@ public class GreetingsTopology {
     private static KStream<String, Greeting> getCustomGreetingKStream(StreamsBuilder streamsBuilder) {
         //KStream<String,String> greetingsStream= streamsBuilder.stream(GREETINGS); // Here this way Stream has no clue about what the Serialization and Deserialization going to be but it still needs to get the Serialization and Deserialization and Deserialization from somewhere else so we will configure at Properties config in launcher
 
-         KStream<String, Greeting> greetingsStream=streamsBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingSerde()));
-        //KStream<String, Greeting> greetingsStream=streamsBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingUsingGenerics()));
+         //KStream<String, Greeting> greetingsStream=streamsBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingSerde()));
+        /**
+          here using Generics so that we can scale up the application even if other types of data types comes in. whereas earlier we created specific serializer and deserializer which is not recommended approach
+         */
+        KStream<String, Greeting> greetingsStream=streamsBuilder.stream(GREETINGS, Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingSerdeUsingGenerics()));
 
         // var greetingsSpanish=streamsBuilder.stream(GREETINGS_SPANISH,Consumed.with(Serdes.String(),Serdes.String()));
-        KStream<String,Greeting> greetingsSpanish= streamsBuilder.stream(GREETINGS_SPANISH,Consumed.with(Serdes.String(),GreetingSerdesFactory.greetingSerde()));
-        //KStream<String,Greeting> greetingsSpanish= streamsBuilder.stream(GREETINGS_SPANISH,Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingUsingGenerics()));
+        //KStream<String,Greeting> greetingsSpanish= streamsBuilder.stream(GREETINGS_SPANISH,Consumed.with(Serdes.String(),GreetingSerdesFactory.greetingSerde()));
+        KStream<String,Greeting> greetingsSpanish= streamsBuilder.stream(GREETINGS_SPANISH,Consumed.with(Serdes.String(), GreetingSerdesFactory.greetingSerdeUsingGenerics()));
 
         greetingsStream.print(Printed.<String, Greeting>toSysOut().withLabel("GREETINGS-STREAM-LABEL"));
         greetingsSpanish.print(Printed.<String, Greeting>toSysOut().withLabel("GREETINGS-SPANISH-LABEL"));

@@ -13,6 +13,7 @@ import java.io.IOException;
 public class JSONDeserializer<T> implements Deserializer<T> {
 
     private Class<T> destinationClass;
+
     private final ObjectMapper objectMapper=new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,false);
