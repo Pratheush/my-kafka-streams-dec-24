@@ -36,7 +36,8 @@ what's needed to build a Custom Serde ?
 * Deserializer
 * Serde that holds the Serializer and Deserializer
 
-
+### 7. Order Management Kafka Streams application - A real time use case
+![Data Model For The Order.png](screenshots%2F7.%20Order%20Management%20Kafka%20Streams%20application%20-%20A%20real%20time%20use%20case%2FData%20Model%20For%20The%20Order.png)
 
 
 
