@@ -29,6 +29,7 @@ public class OrdersKafkaStreamApp {
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"); // read only the new messages
 
+        // The value of threads is controlled by the num.stream.threads. property
         // setting up the number of StreamThreads manually
         // Runtime.getRuntime().availableProcessors(); // we can get the number of threads to set for number os StreamThreads.
         config.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG,"2");

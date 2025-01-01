@@ -1182,7 +1182,7 @@ Kafka Streams - Topology, Task & Threads
 2. A Topology in itself does not execute on its own.
 
 
-when we invoke start() funciton on KafkaStreams i.e. kafkaStreams.start(); then  there are two things happens behind the scenes  ::
+we create a instance of KafkaStreams and when we invoke start() funciton on KafkaStreams i.e. kafkaStreams.start(); then  there are two things happens behind the scenes  ::
  1. Create "Tasks" for the topology
  2. Execute "Tasks" by Stream Threads
  
