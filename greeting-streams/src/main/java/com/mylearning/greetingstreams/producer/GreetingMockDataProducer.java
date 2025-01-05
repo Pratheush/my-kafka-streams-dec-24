@@ -23,7 +23,7 @@ public class GreetingMockDataProducer {
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
         englishGreetings(objectMapper);
-        spanishGreetings(objectMapper);
+        //spanishGreetings(objectMapper);
 
     }
 
@@ -50,9 +50,14 @@ public class GreetingMockDataProducer {
                 new Greeting("Hello, Good Morning!", LocalDateTime.now()),
                 new Greeting("Hello, Good Evening!", LocalDateTime.now()),
                 new Greeting("Hello, Good Night!", LocalDateTime.now()),
-                //new Greeting("Transient Error", LocalDateTime.now()),
-                //new Greeting("Transient Error", LocalDateTime.now()),
-                new Greeting("Hello, Good Night!", LocalDateTime.now())
+                /**
+                 * to simulate error at processing
+                 * 9. ErrorException Handling in Kafka Streams > 4. Default & Custom Processor Error Handler
+                 */
+                new Greeting("Transient Error", LocalDateTime.now()),
+                new Greeting("Transient Error", LocalDateTime.now()),
+
+                new Greeting("Hello, Good Afternoon!", LocalDateTime.now())
         );
 
         englishGreetings

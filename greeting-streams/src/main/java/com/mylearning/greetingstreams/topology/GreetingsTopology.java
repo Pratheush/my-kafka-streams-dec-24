@@ -85,8 +85,16 @@ public class GreetingsTopology {
         // mergedStream.print(Printed.<String,String>toSysOut().withLabel("MERGED-STREAM-LABEL-WITH-STRING-GREETING-SERIALIZER-DESERIALIZER"));
         mergedStream.print(Printed.<String,Greeting>toSysOut().withLabel("MERGED-STREAM-LABEL-WITH-CUSTOM-GREETING-SERIALIZER-DESERIALIZER"));
 
-        KStream<String, Greeting> modifiedStream = exploreOperatorsCustomTypesGreeting(mergedStream);
-        //var modifiedStream = exploreErrors(mergedStream);
+        /**
+         * below code is used when Greeting class or record type i.e. in JSON Format is published and consumed from the Kafka-topic
+         */
+        //KStream<String, Greeting> modifiedStream = exploreOperatorsCustomTypesGreeting(mergedStream);
+
+        /**
+         * 9. ErrorException Handling in Kafka Streams > 4. Default & Custom Processor Error Handler
+         * exploreErrors() has logic to simulate error at processing
+         */
+        var modifiedStream = exploreErrors(mergedStream);
 
         // anytime the message is modified it's going to print to the console with modifiedStream : this way we can look analyze how KafkaStreams is executing this topology
         //modifiedStream.print(Printed.<String, String>toSysOut().withLabel("MODIFIED-STREAM-LABEL-WITH-STRING-GREETING-SERIALIZER-DESERIALIZER"));
@@ -197,5 +205,32 @@ public class GreetingsTopology {
 
         var mergedStream=greetingsStream.merge(greetingsSpanish);
         return mergedStream;
+    }
+
+    /**
+     * exploreErrors() has logic to simulate error at processing
+     * 9. ErrorException Handling in Kafka Streams > 4. Default & Custom Processor Error Handler
+     * down below in logic filter to handle null check as we don't want to pass null values to downstream
+     * @param mergedStream
+     * @return
+     */
+    private static KStream<String,Greeting> exploreErrors(KStream<String,Greeting> mergedStream){
+        return mergedStream
+                .mapValues((readOnlyKey, value) -> {
+                    if(value.message().equals("Transient Error")){
+
+                        try {
+                            throw new IllegalStateException(value.message());
+                        } catch (IllegalStateException e) {
+                            log.error("exploreErrors IllegalStateException Transient Error {}",e.getMessage(),e);
+                            return null;
+                        }
+
+                    }
+                    return new Greeting(value.message().toUpperCase(),value.timeStamp());
+                })
+         //       .filter((key, value) -> value != null ); // we don't want to pass null values to downstream so we are adding filter this makes sure that only non null key and values will be passed down to downstream
+        .filter((key, value) -> key!=null && value != null ); // we don't want to pass null values to downstream so we are adding filter this makes sure that only non null key and values will be passed down to downstream
+        // just for learning here I am adding this filter without checking null values in key to get output and consume output from the Kafka-topic
     }
 }

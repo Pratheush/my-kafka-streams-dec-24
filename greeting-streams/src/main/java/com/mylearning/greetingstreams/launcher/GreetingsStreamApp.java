@@ -1,5 +1,8 @@
 package com.mylearning.greetingstreams.launcher;
 
+import com.mylearning.greetingstreams.exception.GreetingStreamsDeserializationExceptionHandler;
+import com.mylearning.greetingstreams.exception.StreamProcessorCustomErrorHandler;
+import com.mylearning.greetingstreams.exception.StreamsSerializationExceptionHandler;
 import com.mylearning.greetingstreams.topology.GreetingsTopology;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -10,6 +13,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 
 import java.util.List;
 import java.util.Properties;
@@ -59,11 +63,38 @@ public class GreetingsStreamApp {
 
         // setting up the number of StreamThreads manually
         // Runtime.getRuntime().availableProcessors(); // we can get the number of threads to set for number os StreamThreads.
-        //properties.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG,"2");
+        properties.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG,"2");
 
-        //properties.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, GreetingStreamsDeserializationExceptionHandler.class);
+        /**
+         * 2. Default Deserialization Error Behavior
+         *  Default ExceptionHandler is LogAndFailExceptionHandler which causes kafka-streams application to shutdown because this class send the response as fail when application fails to deserialize due to unexpected token from the topic.
+         */
+        //properties.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndFailExceptionHandler.class);
 
-        //properties.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, StreamsSerializationExceptionHandler.class);
+        /**
+         * 2. Default Deserialization Error Behavior
+         * overriding Default Deserialization Error Handler using LogAndContinueExceptionHandler.
+         * When LogAndContinueExceptionHandler is implemented as Default ExceptionHandler by setting up here which
+         * causes kafka-streams application to continue because this class send the response as continue  when application fails to deserialize due to unexpected token from the topic.
+         * so kafka-streams application is going to continue it will not exit or shutdown even if exception is caught during deserialization.
+         */
+        //properties.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndContinueExceptionHandler.class);
+
+        /**
+         * 3. Custom Deserialization Error Handler
+         *  configuring our Custom Deserialization ExceptionHandler GreetingStreamsDeserializationExceptionHandler which causes
+         *  kafka-stream application to continue upto 2 error or exception caught when application fails to deserialize due to unexpected token from the topic.
+         *  and when error counter exceeds 2 then our kafka-stream application will shutdown as GreetingStreamsDeserializationExceptionHandler class will send FAIL as response which will cause
+         *  our kafka-application to shutdown.
+         */
+        properties.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, GreetingStreamsDeserializationExceptionHandler.class);
+
+        /**
+         * 9. ErrorException Handling in Kafka Streams >  5. Custom Production Error Handler
+         *  this is how we handle  ProductionExceptionHandler or Serialization Exception Handler to handle Serialization Exception.
+         *  we are providing our custom ProductionExceptionHandler.
+         */
+        properties.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, StreamsSerializationExceptionHandler.class);
 
         // Another way of configuring Default Kafka Serdes Key and Value Serializer and Deserializer if we don't specifically specify at topology with Consumed.with() and Produced.with()
         // we can use this kind of configuration only when we are sure about that we are going to deal with only one particular key and value serializer and deserializer i.e. Default key and value Serde class
@@ -79,7 +110,13 @@ public class GreetingsStreamApp {
         // KafkaStreams instance start-up the application and properties tells which kafka cluster its going to interact with
         KafkaStreams kafkaStreams=new KafkaStreams(greetingsTopology, properties);
 
-        //kafkaStreams.setUncaughtExceptionHandler(new StreamProcessorCustomErrorHandler());
+        /**
+         * exploreErrors() has logic to simulate error at processing
+         * 9. ErrorException Handling in Kafka Streams > 4. Default & Custom Processor Error Handler
+         * StreamsUncaughtExceptionHandler is configured to topology. through KafkaStreams instance by setting up UncaughtException.
+         *
+         */
+        kafkaStreams.setUncaughtExceptionHandler(new StreamProcessorCustomErrorHandler());
 
         // when this application shuts-down we need to make sure that releasing all the resources that are accessed by this KafkaStreams Application
         // so we can do a Shutdown-Hook anytime we shutdown this app this shutdown-hook is going to be invoked and it's going to call the close function of KafkaStreams
