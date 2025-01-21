@@ -1278,7 +1278,7 @@ num.stream.threads = 2
 
 ========================================================================================================================
 
-ERROR EXCEPTION HANDLING IN KAFKA STREAMS:::::::::::::
+ERROREXCEPTION HANDLING IN KAFKA STREAMS :::::::::::::
 
 
 A typical Kafka Streams Application has three components ::
@@ -1661,7 +1661,7 @@ in ProducerConfig value there is retries value i.e. highest integer value 214748
 
 1. Introduction to KTable API  ::::::::::::::::::::
 
-KTable is an abstraction in Kafka Streams which holds latest value for a given key.
+KTable is an abstraction in Kafka Streams which holds latest value for a given key when reading the data from the Kafka topic.
 
 KTable is also known as update-stream or a change log.
 
@@ -1682,28 +1682,32 @@ public static Topology build(){
 		StreamsBuilder streamsBuilder= new StreamsBuilder();
 		
 		KTable<String,String> wordsTable=streamsBuilder
-																	.table("words", Consumed.with(Serdes.String(), Serdes.String()), Materialized.as("words-store")); // storeName
+												.table("words", Consumed.with(Serdes.String(), Serdes.String()), 																						Materialized.as("words-store")); // storeName
 																	
 																	
 }
 
 
-Materialized.as("words-store") creates state store for us 
+Materialized.as("words-store") creates stateStore for us 
 
 StateStore is necessary for storing the data in an additional entity.
 
 Materialized.as("words-store") creates a stateStore 
 This is needed to retaining the data in an app crash or restart or redeployment.
 
-The default state store is RocksDB
+in the event of app-crash or application-restart or redeployment then using the stateStore we need to retrieve the previous state of the KTable.
 
-RocksDB is a high performance embedded database for key-value data.
+The default state store that comes with KakfaStreams is RocksDB
 
-This is an open source DB under the Apache 2.0
+RocksDB is a high performance embedded database for storing key-value data.
+
+This is an open source DB under the Apache 2.0 license
 
 Data in the embedded key-value store is also persisted in a file system.
 
-Data in the RocksDB also maintained in a changelog topic for Fault Tolerance.
+Data in the RocksDB also maintained in a changelog topic for Fault Tolerance. ChangeLog Topic fundamentally helps in rebuilding the data of the KTable.
+
+KafkaStreams uses another entity behind the scenes to manage the data for our application and we can query the data in stateStore.
 
 When to use KTable ?
 Any business usecase that requires the streaming app to maintain the latest value for a given key can benefit from KTable.
@@ -1711,18 +1715,72 @@ Any business usecase that requires the streaming app to maintain the latest valu
 Example :
 	Stock Trading App that requires to maintain the latest value for a given Stock symbol.
 	
-	
 
+
+During	app-crash or application-restart or redeployment the state of the application is read from the internal topic i.e. ChangeLog Topic 
+which is local to Kafka-Stream and then it gets rebuild.
+
+
+
+KEY-POINT ::: 
+// without Materialized.as("words-store") i.e. state-store ktable will get all the key-value data to the downstream nodes but with state-store only the latest data i.e. key-value is available. to the downstream node.
+// i.e. Materialized.as("words-store") ktable buffers the record for certain timeframe and once the timeframe is exhausted
+// ktable publish the message or data to the downstream so we will get only the latest value here
+
+CONSOLE OUTPUT :::::
+
+// WITH Materialized.as("words-store") shows only the latest key-value pair data in downstream operation.
+
+10:36:00.864 [ktable-b57a88a9-be0c-4f85-9589-81c126da1b51-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: A, value :: Ambulance
+[ktable-words]: A, Ambulance
+10:36:00.865 [ktable-b57a88a9-be0c-4f85-9589-81c126da1b51-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: B, value :: Baby
+[ktable-words]: B, Baby
+
+
+
+
+CONSOLE OUTPUT ::::: 
+// WITHOUT Materialized.as("words-store") : shows all the key-value pair data
+10:38:37.684 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: A, value :: Apple
+[ktable-words]: A, Apple
+10:38:37.691 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: A, value :: Alligator
+[ktable-words]: A, Alligator
+10:38:37.691 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: A, value :: Ambulance
+[ktable-words]: A, Ambulance
+10:38:37.694 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: B, value :: Bus
+[ktable-words]: B, Bus
+10:38:37.695 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: B, value :: Baby
+[ktable-words]: B, Baby
+
+
+
+CONSOLE OUTPUT ::::
+when key is null then ::: THEN RECORD IS IGNORED.
+10:42:51.165 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] WARN  o.a.k.s.k.internals.KTableSource - Skipping record due to null key. topic=[ktable-words] partition=[0] offset=[15]
+10:42:51.182 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] WARN  o.a.k.s.k.internals.KTableSource - Skipping record due to null key. topic=[ktable-words] partition=[0] offset=[16]
+10:42:51.189 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] WARN  o.a.k.s.k.internals.KTableSource - Skipping record due to null key. topic=[ktable-words] partition=[0] offset=[17]
+10
+10:42:51.198 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: B, value :: Bus
+[ktable-words]: B, Bus
+10:42:51.204 [ktable-5c9f30de-c060-4ace-99eb-99e272578435-StreamThread-1] INFO  c.m.g.topology.ExploreKTableTopology - wordsTable :: key :: B, value :: Baby
+[ktable-words]: B, Baby
 
 
 
 once the message is consumed by this KTable what it does is it keeps buffering for certain time frame and then once again time frame is exhausted then what it will do is 
 it is going to take the latest value for the given key and then publish that message downstream
 
-so in this case the KTable waits for certain time frame and buffers the record with in the time frame and once the time frame is exhausted its going to sending that message downstream so in this cases its our filter() operator , toStream() and then print() gets executed based on the data.
+so in this case the KTable waits for certain time frame and buffers the record with in the time frame and once the time frame is exhausted its going to sending that message downstream so 
+in this cases its our filter() operator , toStream() and then print() gets executed based on the data.
 
 
 so KTable is an API we use when we want to see latest value for any given key
+
+
+
+
+3. KTable - Under the Hood  :::::::::::::::::::::::::::::::::::::::
+
 
 When does KTable decides to emit the data(records) to the downstream nodes ?
 There are two configurations that controls this ::
@@ -1730,22 +1788,22 @@ There are two configurations that controls this ::
 	2. commit.interval.ms 
 
 
-1. cache.max.bytes.buffering : this means KTable uses cache internally for deduplication and cache serves as a buffer 
+1. cache.max.bytes.buffering : this means KTable uses cache internally for deduplication and cache serves as a buffer. 
 This buffer holds the previous value, any new message with the same key updates the current value.
-Caching also helps with the amount of data written into the RocksDB 
-cache.max.bytes.buffering=10485760(~10MB) ## o.apache.kafka.streams.StreamsConfig - StreamsConfig values:
-so, if the buffer size is greater than the cache.max.bytes.buffering value then the data will be emiited to the downstream nodes. 
+Caching also helps with the managing the amount of data written into the RocksDB 
+default size of Buffer is 10MB. i.e. cache.max.bytes.buffering=10485760(~10MB) ## o.apache.kafka.streams.StreamsConfig - StreamsConfig values:
+so, if the buffer size is greater than the valume mentioned in the cache.max.bytes.buffering value then the data will be emiited to the downstream nodes. 
 
 so this cache holds the value in the memory and once the memory is full then it will decide to send the value to the downstream nodes.
 this is one way of managing the KTable to prevent sending the values to the downstream nodes immediately 
 
 
 2. commit.interval.ms=30000 (30 seconds) ##  o.apache.kafka.streams.StreamsConfig - StreamsConfig values
-this is another property responsible for sending the data from the KTable to the downstream nodes
+this is another property responsible for sending the data from the KTable to the downstream nodes. The default commit.interval.ms=30000 (30 seconds) 
 KTable emits the data to the downstream processor nodes once the commit interval is exhausted.
 
 
-Since we have use Materialized.as() any value in the KTable is going to be maintained in the internal changelog topic 
+Since we have used Materialized.as() any value in the KTable is going to be maintained in the internal changelog topic. 
 command :::: HERE WE CAN SEE OUR CHANGLELOG BEHIND THE SCENES ITS CREATED i.e. ktable-words-store-changelog for our application 
 
 >.\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
@@ -1760,6 +1818,8 @@ orders-general
 orders-restaurant
 words
 
+
+ktable-words-store-changelog this is the changelog topic i.e. created behind the scenes.
 
 command to see the values in this ktable-words-store-changelog topic ::::::::::::::::
  .\bin\windows\kafka-console-consumer.bat  --bootstrap-server localhost:9092 --topic  ktable-words-store-changelog  --from-beginning
@@ -1781,7 +1841,7 @@ these are different values that are the part of KTable which is present in the c
 
 when we restart the application what this is going to do is this is going to Kafka-topic and get
 all the values for this state store which is here is words-store and its going to match with this 
-changelog topic and adds the changelog topic ..
+changelog topic and adds the changelog topic ..so its going to read all the values for the given key and value and its going to get the updated value for the given key.
 
 
 
@@ -1851,7 +1911,7 @@ When to use KTable vs GlobalKTable ?
 1. KTable is an advanced API and it supports many operators to enrich the data 
 2. Use KTable if you have a larger KeySpace.
 			1. This means if you have a huge number of Keys(may be in Millions).
-			2. KTable is better for joins where time needs to be synchronized.
+			2. KTable is better for joins where time needs to be synchronized when we are joining multiple streams together.
 3. Use GlobalKTable if the KeySpace is smaller.
 
 

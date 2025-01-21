@@ -14,7 +14,7 @@ public class WordsProducer {
         // When key is null then this will happen
         // 13:28:06.994 [ktable-ab67a044-caa8-4d62-a74b-053a02c988e2-StreamThread-1]
         // WARN  o.a.k.s.k.internals.KTableSource - Skipping record due to null key. topic=[ktable-words] partition=[0] offset=[55]
-        String key = "A";
+        String key = null;
 
         var word = "Apple";
         var word1 = "Alligator";

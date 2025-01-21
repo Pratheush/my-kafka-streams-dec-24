@@ -42,11 +42,18 @@ what's needed to build a Custom Serde ?
 
 
 
+### 10. KTable & Global KTable
+![1. Introduction to KTable API.png](screenshots%2F10.%20KTable%20%26%20Global%20KTable%2F1.%20Introduction%20to%20KTable%20API.png)
 
 
+![5. GlobalKTable.png](screenshots%2F10.%20KTable%20%26%20Global%20KTable%2F5.%20GlobalKTable.png)
+In KTable
+the tasks are split in between them because the data in the kafka topic in general split based on the keys since we have four partitions
+we have keys split across all the four partitions so instance 1 has access to the only keys that are tied to the task 1 and task 2. it could be possibly data from the partition p1 and p2.
+and instance 2 has access to the keys that are tied to task 3 and task 4.
 
-
-
+In Global-KTable its instance have access to all the keys from all the tasks.
+so it has way to get the data for all the keys from all the available instances and have the data available local to the instances.
 
 
 
