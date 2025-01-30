@@ -30,7 +30,7 @@ public class ExploreKTableTopology {
          * that message downstream so in this cases its our filter() operator , toStream() and then print() gets executed based on the data.
          **/
         KTable<String, String> wordsTable=streamsBuilder.table(KTABLE_WORDS, Consumed.with(Serdes.String(),Serdes.String())
-        //, Materialized.as("words-store")
+        , Materialized.as("words-store")
         );
 
         /** 10. KTable & Global KTable >> 5. GlobalKTable

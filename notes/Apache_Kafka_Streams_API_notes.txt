@@ -1792,7 +1792,7 @@ There are two configurations that controls this ::
 This buffer holds the previous value, any new message with the same key updates the current value.
 Caching also helps with the managing the amount of data written into the RocksDB 
 default size of Buffer is 10MB. i.e. cache.max.bytes.buffering=10485760(~10MB) ## o.apache.kafka.streams.StreamsConfig - StreamsConfig values:
-so, if the buffer size is greater than the valume mentioned in the cache.max.bytes.buffering value then the data will be emiited to the downstream nodes. 
+so, if the buffer size is greater than the value mentioned in the cache.max.bytes.buffering value then the data will be emiited to the downstream nodes. 
 
 so this cache holds the value in the memory and once the memory is full then it will decide to send the value to the downstream nodes.
 this is one way of managing the KTable to prevent sending the values to the downstream nodes immediately 
@@ -1841,7 +1841,7 @@ these are different values that are the part of KTable which is present in the c
 
 when we restart the application what this is going to do is this is going to Kafka-topic and get
 all the values for this state store which is here is words-store and its going to match with this 
-changelog topic and adds the changelog topic ..so its going to read all the values for the given key and value and its going to get the updated value for the given key.
+changelog topic and adds the changelog topic .so when this KTable gets created it knows what is the previous value for the key A and B  .so its going to read all the values for the given key and value and its going to get the updated value for the given key.
 
 
 
