@@ -82,9 +82,18 @@ REDUCE OPERATION VISUALIZATION ::
 AGGREGATE OPERATION ::
 ![Aggregate Operator.png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FAggregate%20Operator.png)
 
+### 12. StateFul Operation Results - How to access them
+approaches about sharing the data results of the aggregation
+until now we have the aggregated results stored in the State-Store(RocksDB) and Internal Kafka Topic so these are the two places where aggregated data resides.
+in order to be beneficial for the business data to be made available to the outside world or the teams inside the organization looking for that particular data.
+1. OPTION 1: since state-store is RocksDB we can build the rest-api that interacts with the RocksDB and have the clients who look for the data to interact with this REST-Api
+2. OPTION 2: Publishing the aggregated results in another Kafka-Topic and have the clients consume this data. if we are thinking that Internal Kafka-Topic has already data then why do we need to publish the results into another Kafka-Topic
+Reason 1 is Kafka-Topic name is controlled by Kafka-Streams Library itself so we have limited control on what the Kafka Topic name the consumers needs to retrieve
+from. In this option of publishing the data into another Kafka-Topic the client still needs to build the logic to read and update the aggregated results and this is my least favorite option so i am going to roll this one out.
 
+Next favourable option is building the Rest-API and have the clients interact with the REST-Api but the Rest-API behind the scenes is going to interact with the State-Store i.e. RocksDB then fulfill the client request. This way client gets data directly from the source-app that's aggregating this data
 
-
+![How to access the results of Aggregation .png](screenshots%2F12.%20StateFul%20Operation%20Results%20-%20How%20to%20access%20them%2FHow%20to%20access%20the%20results%20of%20Aggregation%20.png)
 
 
 
