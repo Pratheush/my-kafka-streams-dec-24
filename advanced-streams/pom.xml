@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.mylearning</groupId>
-    <artifactId>greeting-streams</artifactId>
+    <artifactId>advanced-streams</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>greeting-streams</name>
-    <description>greeting-streams</description>
+    <name>advanced-streams</name>
+    <description>advanced-streams</description>
     <url/>
     <licenses>
         <license/>
@@ -42,13 +42,6 @@
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
-
-        <!--<dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-docker-compose</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>-->
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -85,6 +78,9 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <image>
+                        <builder>paketobuildpacks/builder-jammy-base:latest</builder>
+                    </image>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

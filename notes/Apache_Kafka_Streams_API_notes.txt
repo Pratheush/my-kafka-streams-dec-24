@@ -1965,7 +1965,7 @@ Aggregations works only on Kafka Records that has non-null Keys.
 2> Aggregate the Records 
 
 There are two configuration that controls this :
-1. cache.max.bytes.buffering either this property value exceeds
+1. cache.max.bytes.buffering either this property value exceeded
 2. commit.interval.ms or either this given propertly value  interval time frame gets exhausted
 
 once these two above conditions met aggreations will automatically happens .
@@ -1991,7 +1991,7 @@ This will return a KTable of this type KTable<String, Long>
 	String -> Key of the record ( representation of the actual key)
 	Long   -> Value of the record (total number of events that are received for the particular key)
 	
-The aggregated value gets stored in an internal topic :::
+The aggregated value gets stored in an internal topic (this helps with fault Tolerance and retention). so anytime we restart our kafka-streaming application this is one of the ways getting the previous state and load the state into our kafka-streaming application.
 
 Here A,Apple is one record and A,Alpha is another record and b,Bus is another record and so on. where A & B are key here.
 
@@ -2034,7 +2034,7 @@ so it reconstructs this whole state of this topology meaning of this given key w
 [words-count-per-alphabet]: B, 4
 
 
-see the previous values gets updated from the internal kafka topic 
+see the previous values gets updated from the internal kafka topic when we restart the kafka-stream application.
 earlier [words-count-per-alphabet]: A, 3         and after running the producer application again (AggregateProducer) :::: [words-count-per-alphabet]: A, 6
 so does the same for key B 
 and the value gets updated i.e. this aggregation runs automatically
@@ -2059,8 +2059,8 @@ aggregate-KSTREAM-AGGREGATE-STATE-STORE-0000000003-changelog
 aggregate-KSTREAM-AGGREGATE-STATE-STORE-0000000003-repartition
 
 this new internal Kafka topic is created because we have new key in groupBy() and for that new key it needs to maintain the changelog topic so new KAFKA Topic is created
-and repartition is the concept where it needs to repartition the kafka records in such a way that when you are running that in a distributed environment this is going to take care of placing the records 
-in the appropriate partition.
+and repartition is the concept where it needs to repartition the kafka records in such a way that when you are running kafka in a distributed environment this is going to take care of placing the records 
+in the appropriate partitions by distributing the records evenly accross the cluster.
 
 anytime we are changing the key we have two internal topics created 1. is changelog and 2. is repartition so this is needed for repartitioning the records  so that records get distributed evenly across
 the Kafka Cluster
@@ -2084,7 +2084,8 @@ var groupedString= wordsTable
 
 The return type of the reduce operator must be the same type as the value.
 
-The aggregated value gets stored in an internal topic (this helps with fault Tolerance and retention)
+The aggregated value gets stored in an internal topic (this helps with fault Tolerance and retention). so anytime we restart our kafka-streaming application this is one of the ways getting the previous state and load the state into our kafka-streaming application.
+
 
 
 ----------------------------------------------------------------------------------------------------------------
@@ -2093,7 +2094,7 @@ The aggregated value gets stored in an internal topic (this helps with fault Tol
 aggregate::::::::
 An aggregate operator is similar to reduce operator.
 
-The aggregated type can be different form actual Kafka Records that we are acting on.
+The return type of aggregate() operator is KTable and aggregated type can be different form actual Kafka Records that we are acting on.
 
 Topic (Key,Value)							A, Apple																														A, Adam
 																								
@@ -2106,7 +2107,7 @@ The aggregated value gets stored in an internal topic
 Initializer<AlphabetWordAggregate> alphabetWordAggregateInitializer = AlphabetWordAggregate::new;
 
 
-// aggregator :: where we are updating the running_count and update the array-value with the new value as the new values come in .
+// aggregator :: where we are updating the running_count and update the array-value i.e. list of values with the new value as the new values come in .
 Aggregator<String, String, AlphabetWordAggregate> aggregator = (key, value, alphabetWordAggregate) -> { return alphabetWordAggregate.updateNewEvents (key, Value);};
 											
 // materializing the aggregated value to a stateStore 

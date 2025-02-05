@@ -56,21 +56,31 @@ In Global-KTable its instance have access to all the keys from all the tasks.
 so it has way to get the data for all the keys from all the available instances and have the data available local to the instances.
 
 
+### 11. StateFul Operations in Kafka Streams - Aggregate, Join and Windowing Events
+
+   How Aggregation works ?
+   Aggregations works only on Kafka Records that has non-null Keys.
+   1. Group Records by Key
+   2. Aggregate the Records
+
+![How aggregation works .png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FHow%20aggregation%20works%20.png)
 
 
+COUNT OPERATION ::
+
+![Count Operator1.png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FCount%20Operator1.png)
+
+REDUCE OPERATION ::
+
+![Reduce Operator1.png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FReduce%20Operator1.png)
+
+REDUCE OPERATION VISUALIZATION ::
+
+![Reduce Operator Visualization.png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FReduce%20Operator%20Visualization.png)
 
 
-
-
-
-
-
-
-
-
-
-
-
+AGGREGATE OPERATION ::
+![Aggregate Operator.png](screenshots%2F11.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Aggregate%2C%20Join%20and%20Windowing%20Events%2FAggregate%20Operator.png)
 
 
 
