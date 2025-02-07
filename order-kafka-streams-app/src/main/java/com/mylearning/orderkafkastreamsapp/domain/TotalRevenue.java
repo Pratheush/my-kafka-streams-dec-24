@@ -9,8 +9,9 @@ public record TotalRevenue(String locationId,
                            Integer runningOrderCount,
                            BigDecimal runningRevenue) {
 
+    // Default Constructor
     public TotalRevenue(){
-        this("",0,BigDecimal.valueOf(0));
+        this("",0,BigDecimal.valueOf(0.0));
     }
 
     public TotalRevenue updateTotalRevenue(String locationId, Order order){

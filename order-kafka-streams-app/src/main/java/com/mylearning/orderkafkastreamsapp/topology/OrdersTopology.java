@@ -11,6 +11,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.slf4j.event.KeyValuePair;
 
 import java.math.BigDecimal;
 
@@ -59,7 +60,8 @@ public class OrdersTopology {
 
         KStream<String, Order> orderStream= streamsBuilder
                 .stream(ORDERS, Consumed.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
-                .selectKey((key, value) -> value.locationId());
+                //.selectKey((key, value) -> value.locationId())
+                ;
 
         orderStream.print(Printed.<String,Order>toSysOut().withLabel(ORDERS));
 
@@ -116,6 +118,17 @@ public class OrdersTopology {
                             .to(GENERAL_ORDERS,Produced.with(Serdes.String(),OrderSerdesFactory.revenueSerde()));
                             //.to(GENERAL_ORDERS,Produced.with(Serdes.String(),OrderSerdesFactory.orderSerde()));
 
+                                /**
+                                 * 13. Aggregation in Order Management Application - A Real Time Use Case
+                                 *  1. Total number of orders by each store using count operator
+                                 */
+                                aggregateOrdersByCount(generalOrderStream,GENERAL_ORDERS_COUNT);
+                                /**
+                                 * 13. Aggregation in Order Management Application - A Real Time Use Case
+                                 *  2. Total Revenue made from the orders by each store using aggregate operator
+                                 */
+                                aggregateOrdersByRevenue(generalOrderStream, GENERAL_ORDERS_TOTAL_REVENUE);
+
                                 }))
                         .branch(restaurantPredicate,
                                 Branched.withConsumer(restaurantOrderStream ->{
@@ -126,9 +139,24 @@ public class OrdersTopology {
                                                     .mapValues((readOnlyKey,order) -> revenueValueMapper.apply(order))
                                                     .to(RESTAURANT_ORDERS, Produced.with(Serdes.String(),OrderSerdesFactory.revenueSerde()));
                                                     //.to(RESTAURANT_ORDERS, Produced.with(Serdes.String(),OrderSerdesFactory.orderSerde()));
+
+                                    /**
+                                     * From Tutorial Section
+                                     * 13. Aggregation in Order Management Application - A Real Time Use Case
+                                     *  1. Total number of orders by each store using count operator
+                                     */
+                                    aggregateOrdersByCount(restaurantOrderStream,RESTAURANT_ORDERS_COUNT);
+                                    /**
+                                     * From Tutorial section
+                                     * 13. Aggregation in Order Management Application - A Real Time Use Case
+                                     *  2. Total Revenue made from the orders by each store using aggregate operator
+                                     */
+                                    aggregateOrdersByRevenue(restaurantOrderStream, RESTAURANT_ORDERS_TOTAL_REVENUE);
+
                                         })
                                         );
     }
+
 
     // my way of doing the split of OrderStream into Two General and Restaurant
     private static void mySplitUsingFilter(KStream<String, Order> orderStream) {
@@ -166,7 +194,7 @@ public class OrdersTopology {
         KTable<String,Long> ordersCount =
         orderStream
                 .filter(predicateOrderType)
-                //.map((key, value) -> KeyValue.pair(value.locationId(),value)) // using map() to re-key the records since I am using selectKey() above
+                .map((key, value) -> KeyValue.pair(value.locationId(),value)) // using map() to re-key the records since I am using selectKey() above
                 .groupByKey(Grouped.with(Serdes.String(),OrderSerdesFactory.orderSerde()))
                 .count(Named.as(orderTypeCount), Materialized.as(orderTypeCount));
 
@@ -176,6 +204,64 @@ public class OrdersTopology {
 
     }
 
+    /**
+     * 13. Aggregation in Order Management Application - A Real Time Use Case
+     * 1. Total number of orders by each store using count operator
+     * @param orderKStream
+     * @param storeName
+     */
+
+    private static void aggregateOrdersByCount(KStream<String, Order> orderKStream, String storeName) {
+        KeyValueMapper<String,Order,KeyValue<String,Order>> locationIdKeyValueMapper = (key,value) -> KeyValue.pair(value.locationId(),value);
+        KTable<String, Long> ordersCount = orderKStream
+                .peek((key, orderValue) -> log.info("Key : {}, OrderValue : {}", key, orderValue))
+                //.map(locationIdKeyValueMapper)
+                //.map(locationIdKeyValueMapper::apply)
+                //.map(((key, value) -> KeyValue.pair(value.locationId(), value)))  // using map() to re-key the records, since .selectKey((key, value) -> value.locationId()) is not used to transforming key from orderId to locationId
+                //.groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
+                .groupBy((key, value) -> value.locationId(),Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))  // we can also use groupBy() instead of groupByKey() we use groupBy() when we need to decide the Key of different type and, here is locationId and order is key and value.
+                .count(Named.as("ORDER-COUNT"+storeName), Materialized.<String, Long, KeyValueStore<Bytes, byte[]>>as("ORDER-COUNT"+storeName));
+
+        ordersCount
+                .toStream()
+                .print(Printed.<String,Long>toSysOut().withLabel("ORDER-TYPE-COUNT"));
+    }
+
+    private static void aggregateOrdersByRevenue(KStream<String, Order> orderStream, String storeName) {
+        KeyValueMapper<String,Order,KeyValue<String,Order>> locationIdKeyValueMapper = (key,value) -> KeyValue.pair(value.locationId(),value);
+
+        Initializer<TotalRevenue> totalRevenueInitializer= TotalRevenue::new;
+
+        Aggregator<String, Order, TotalRevenue> totalRevenueAggregator=(key, value, totalRevenue) -> totalRevenue.updateTotalRevenue(key, value);
+
+        KTable<String, TotalRevenue> aggregatedTotalRevenue = orderStream
+                .peek(((key, value) -> log.info("KEY :: {}, ORDER-VALUE : {}", key, value)))
+                //.map(locationIdKeyValueMapper)
+                //.map(locationIdKeyValueMapper::apply)
+                //.map(((key, value) -> KeyValue.pair(value.locationId(),value)))
+                //.groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
+                .groupBy(((key, value) -> value.locationId()), (Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde())))
+                .aggregate(
+                        totalRevenueInitializer,
+                        totalRevenueAggregator,
+                        Materialized.<String, TotalRevenue, KeyValueStore<Bytes, byte[]>>as(storeName)
+                                .withKeySerde(Serdes.String())
+                                .withValueSerde(OrderSerdesFactory.totalRevenueSerde())
+                );
+
+        aggregatedTotalRevenue
+                .toStream()
+                .print(Printed.<String, TotalRevenue>toSysOut().withLabel(storeName.toUpperCase()));
+    }
+
+    /**
+     * 13. Aggregation in Order Management Application - A Real Time Use Case
+     * 2. Total Revenue made from the orders by each store using aggregate operator
+     * @param orderKStream
+     * @param orderTotalRevenue
+     * @param predicateOrderType
+     * @param storeKtable
+     */
     private static void totalRevenue(KStream<String, Order> orderKStream, String orderTotalRevenue, Predicate<? super String,? super Order> predicateOrderType, KTable<String,Store> storeKtable){
 
         Initializer<TotalRevenue> totalRevenueInitializer= TotalRevenue::new;
