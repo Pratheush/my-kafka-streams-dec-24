@@ -58,9 +58,13 @@ public class OrdersTopology {
 
         StreamsBuilder streamsBuilder=new StreamsBuilder();
 
+        /**
+         *  selectKey() will re-key the records from orderId to locationId
+         * .selectKey((key, value) -> value.locationId()) when we use this selectKey() we don't need to use map() or groupBy() to re-key the records therefore we can use groupByKey() and count()/aggregate()/reduce() operation to process.
+         */
         KStream<String, Order> orderStream= streamsBuilder
                 .stream(ORDERS, Consumed.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
-                //.selectKey((key, value) -> value.locationId())
+                .selectKey((key, value) -> value.locationId()) // 14. Re-Keying Kafka Records for Stateful operations >> 2. Re-Keying using the selectKey operator
                 ;
 
         orderStream.print(Printed.<String,Order>toSysOut().withLabel(ORDERS));
@@ -219,20 +223,31 @@ public class OrdersTopology {
          * all map() operation works when we have to re-key the record from orderId to locationId then we can group the records based on key by using groupByKey()
          * or
          * we can use groupBy() operation directly without using map() operation to re-key the records from orderId to locationId and group the records based on key.
+         *
+         * Materialized View creates changelog internal partition i.e. Materialized.<String, Long, KeyValueStore<Bytes, byte[]>>as("ORDER-COUNT"+storeName)
+         *
+         * Repartition is the topic which comes into play when we are changing the key for any record here in this case we are not using orderId instead we are adding a new key i.e. locationId
+         * in those kind of scenarios data's get return back to the repartition topic and then the whole process of reconstructing this KeyValue-Pair happens behind the scenes.
+         * so all the kafka-records return into the repartition topic and then read from the repartition topic so that it represents the latest value.
          */
         KTable<String, Long> ordersCount = orderKStream
                 .peek((key, orderValue) -> log.info("Key : {}, OrderValue : {}", key, orderValue))
                 //.map(locationIdKeyValueMapper)
                 //.map(locationIdKeyValueMapper::apply)
                 //.map(((key, value) -> KeyValue.pair(value.locationId(), value)))  // using map() to re-key the records, since .selectKey((key, value) -> value.locationId()) is not used to transforming key from orderId to locationId
-                //.groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
-                .groupBy((key, value) -> value.locationId(),Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))  // we can also use groupBy() instead of groupByKey() we use groupBy() when we need to decide the Key of different type and, here is locationId and order is key and value.
+                .groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
+                //.groupBy((key, value) -> value.locationId(),Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))  // we can also use groupBy() instead of groupByKey() we use groupBy() when we need to decide the Key of different type and, here is locationId and order is key and value.
                 .count(Named.as("ORDER-COUNT"+storeName), Materialized.<String, Long, KeyValueStore<Bytes, byte[]>>as("ORDER-COUNT"+storeName));
 
         ordersCount
                 .toStream()
                 .print(Printed.<String,Long>toSysOut().withLabel("ORDER-TYPE-COUNT"));
     }
+
+    /**
+     * 13. Aggregation in Order Management Application - A Real Time Use Case
+     * 2. Total Revenue made from the orders by each store using aggregate operator
+     */
 
     private static void aggregateOrdersByRevenue(KStream<String, Order> orderStream, String storeName) {
         KeyValueMapper<String,Order,KeyValue<String,Order>> locationIdKeyValueMapper = (key,value) -> KeyValue.pair(value.locationId(),value);
@@ -246,11 +261,17 @@ public class OrdersTopology {
          * all map() operation works when we have to re-key the record from orderId to locationId then we can group the records based on key by using groupByKey()
          * or
          * we can use groupBy() operation directly without using map() operation to re-key the records from orderId to locationId and group the records based on key.
+         *
+         * Materialized View creates changelog internal partition i.e. Materialized.<String, Long, KeyValueStore<Bytes, byte[]>>as("ORDER-COUNT"+storeName)
+         *
+         * Repartition is the topic which comes into play when we are changing the key for any record here in this case we are not using orderId instead we are adding a new key i.e. locationId
+         * in those kind of scenarios data's get return back to the repartition topic and then the whole process of reconstructing this KeyValue-Pair happens behind the scenes.
+         * so all the kafka-records return into the repartition topic and then perform the repartition and reading from the repartition topic so that it represents the latest value.
          */
         KTable<String, TotalRevenue> aggregatedTotalRevenue = orderStream
                 .peek(((key, value) -> log.info("KEY :: {}, ORDER-VALUE : {}", key, value)))
                 //.map(locationIdKeyValueMapper)
-                .map(locationIdKeyValueMapper::apply)
+                //.map(locationIdKeyValueMapper::apply)
                 //.map(((key, value) -> KeyValue.pair(value.locationId(),value)))
                 .groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
                 //.groupBy(((key, value) -> value.locationId()), (Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde())))

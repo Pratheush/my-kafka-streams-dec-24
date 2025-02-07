@@ -96,7 +96,10 @@ Next favourable option is building the Rest-API and have the clients interact wi
 ![How to access the results of Aggregation .png](screenshots%2F12.%20StateFul%20Operation%20Results%20-%20How%20to%20access%20them%2FHow%20to%20access%20the%20results%20of%20Aggregation%20.png)
 
 
+### 14. Re-Keying Kafka Records for Stateful operations
+##### 2. Re-Keying using the selectKey operator
 
+![Re-Keying using the selectKey operator.png](screenshots%2F14.%20Re-Keying%20Kafka%20Records%20for%20Stateful%20operations%2FRe-Keying%20using%20the%20selectKey%20operator.png)
 
 
 
