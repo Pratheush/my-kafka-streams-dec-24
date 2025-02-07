@@ -213,6 +213,13 @@ public class OrdersTopology {
 
     private static void aggregateOrdersByCount(KStream<String, Order> orderKStream, String storeName) {
         KeyValueMapper<String,Order,KeyValue<String,Order>> locationIdKeyValueMapper = (key,value) -> KeyValue.pair(value.locationId(),value);
+
+        /**
+         * using map() to re-key the records, since .selectKey((key, value) -> value.locationId()) is not used above for transforming key from orderId to locationId
+         * all map() operation works when we have to re-key the record from orderId to locationId then we can group the records based on key by using groupByKey()
+         * or
+         * we can use groupBy() operation directly without using map() operation to re-key the records from orderId to locationId and group the records based on key.
+         */
         KTable<String, Long> ordersCount = orderKStream
                 .peek((key, orderValue) -> log.info("Key : {}, OrderValue : {}", key, orderValue))
                 //.map(locationIdKeyValueMapper)
@@ -234,13 +241,19 @@ public class OrdersTopology {
 
         Aggregator<String, Order, TotalRevenue> totalRevenueAggregator=(key, value, totalRevenue) -> totalRevenue.updateTotalRevenue(key, value);
 
+        /**
+         * using map() to re-key the records, since .selectKey((key, value) -> value.locationId()) is not used above for transforming key from orderId to locationId
+         * all map() operation works when we have to re-key the record from orderId to locationId then we can group the records based on key by using groupByKey()
+         * or
+         * we can use groupBy() operation directly without using map() operation to re-key the records from orderId to locationId and group the records based on key.
+         */
         KTable<String, TotalRevenue> aggregatedTotalRevenue = orderStream
                 .peek(((key, value) -> log.info("KEY :: {}, ORDER-VALUE : {}", key, value)))
                 //.map(locationIdKeyValueMapper)
-                //.map(locationIdKeyValueMapper::apply)
+                .map(locationIdKeyValueMapper::apply)
                 //.map(((key, value) -> KeyValue.pair(value.locationId(),value)))
-                //.groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
-                .groupBy(((key, value) -> value.locationId()), (Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde())))
+                .groupByKey(Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
+                //.groupBy(((key, value) -> value.locationId()), (Grouped.with(Serdes.String(), OrderSerdesFactory.orderSerde())))
                 .aggregate(
                         totalRevenueInitializer,
                         totalRevenueAggregator,
