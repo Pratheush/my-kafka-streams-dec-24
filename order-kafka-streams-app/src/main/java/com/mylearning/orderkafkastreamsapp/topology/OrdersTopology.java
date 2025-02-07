@@ -59,7 +59,7 @@ public class OrdersTopology {
 
         KStream<String, Order> orderStream= streamsBuilder
                 .stream(ORDERS, Consumed.with(Serdes.String(), OrderSerdesFactory.orderSerde()))
-                .selectKey(((key, value) -> value.locationId()));
+                .selectKey((key, value) -> value.locationId());
 
         orderStream.print(Printed.<String,Order>toSysOut().withLabel(ORDERS));
 
@@ -90,9 +90,15 @@ public class OrdersTopology {
     //   tutorial way of doing the split of OrderStream into Two General and Restaurant and produce to two different kafka-topics
     private static void splitUsingBranched(KStream<String, Order> orderStream, Predicate<? super String, ? super Order> generalPredicate, Predicate<? super String, ? super Order> restaurantPredicate) {
 
+        // ValueMapper<Value,NewMappedOutPutValue> ValueMapper maps Value to NewMappedOutPutValue here i.e. from Order to Revenue.
         ValueMapper<Order,Revenue> revenueValueMapper=order -> new Revenue(order.locationId(), order.finalAmount());
 
-        // BranchedKStream<K, V> branch(Predicate<? super K, ? super V> var1, Branched<K, V> var2);
+        /**
+         * Split this stream into different branches. The returned BranchedKStream instance can be used for routing
+         * the records to different branches depending on evaluation against the supplied predicates.
+         *
+         * BranchedKStream<K, V> branch(Predicate<? super K, ? super V> var1, Branched<K, V> var2);
+         */
         orderStream
                 .split(Named.as("Restaurant_General_Orders"))
                         .branch(generalPredicate,
@@ -103,6 +109,7 @@ public class OrdersTopology {
 
                                 /**
                                  * transform the Order into Revenue and Publish The Transaction Amount to THe Topic using ValueMapper
+                                 * mapValues() method : Transform the value of each input record into a new value (with possible new type) of the output record
                                  */
                             generalOrderStream
                                     .mapValues((readOnlyKey,order) -> revenueValueMapper.apply(order))
