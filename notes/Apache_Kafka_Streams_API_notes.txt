@@ -2576,12 +2576,13 @@ How is this different from merge operator ?
 	3. outerJoin 
 	
 
+Different Types of Join that can be performed on Kafka-Streams.
 Types of Joins in KAFKA Streams ::
 Join Types 						Operators::
-KStream-KTable				join, leftJoin
-KStream-GlobalKTable		join, leftJoin
-KTable-KTable					join,leftJoin,outerJoin
-KStream-KStream 			join, leftJoin, outerJoin
+KStream-KTable				join, leftJoin (Joining KStream with the KTable)
+KStream-GlobalKTable		join, leftJoin  (Joining KStream with the GlobalKTable)
+KTable-KTable					join,leftJoin,outerJoin  (Joining KTable with the KTable)
+KStream-KStream 			join, leftJoin, outerJoin  (Joining KStream with the KStream)
 
 joins will get triggered if there is a matching record for the same key.
 to achieve a resulting  data model like this, we would need a ValueJoiner. 

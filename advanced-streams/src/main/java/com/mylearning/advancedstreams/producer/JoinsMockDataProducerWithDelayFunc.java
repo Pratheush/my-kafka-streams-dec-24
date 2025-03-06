@@ -10,7 +10,7 @@ import java.util.Map;
 import static com.mylearning.advancedstreams.producer.ProducerUtilWithDelayFunc.publishMessageSync;
 import static com.mylearning.advancedstreams.producer.ProducerUtilWithDelayFunc.publishMessageSyncWithDelay;
 import static com.mylearning.advancedstreams.topology.ExploreJoinsOperatorsTopology.ALPHABETS;
-import static com.mylearning.advancedstreams.topology.ExploreJoinsOperatorsTopology.ALPHABETS_ABBREVATIONS;
+import static com.mylearning.advancedstreams.topology.ExploreJoinsOperatorsTopology.ALPHABETS_ABBREVIATIONS;
 import static java.time.Instant.now;
 
 @Slf4j
@@ -28,10 +28,11 @@ public class JoinsMockDataProducerWithDelayFunc {
         );
         //publishMessages(alphabetMap, ALPHABETS);
 
+        // Delay is introduced here in ALPHABET topic since ALPHABET-ABBREVIATIONS is considered as primary so we introduce delay in secondary
         //JoinWindows
         //-4 & 4 will trigger the join
-        //-6 -5 & 5, 6 wont trigger the join :: +5 will trigger the join but -5 will not trigger the join
-        publishMessagesWithDelay(alphabetMap, ALPHABETS, -6);
+        //-6 -5 & 5, 6 won't trigger the join :: +5 will trigger the join but -5 will not trigger the join
+        publishMessagesWithDelay(alphabetMap, ALPHABETS, 4);
 
         var alphabetAbbrevationMap = Map.of(
                 "A", "Apple",
@@ -39,7 +40,7 @@ public class JoinsMockDataProducerWithDelayFunc {
                 , "C", "Cat"
 
         );
-        publishMessages(alphabetAbbrevationMap, ALPHABETS_ABBREVATIONS);
+        publishMessages(alphabetAbbrevationMap, ALPHABETS_ABBREVIATIONS);
 
         alphabetAbbrevationMap = Map.of(
                 "A", "Airplane",
