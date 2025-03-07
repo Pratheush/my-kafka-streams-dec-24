@@ -67,9 +67,19 @@ public class OrdersTopology {
                 .selectKey((key, value) -> value.locationId()) // 14. Re-Keying Kafka Records for Stateful operations >> 2. Re-Keying using the selectKey operator
                 ;
 
+        /**
+         * [orders]: store_1234, Order[orderId=12345, locationId=store_1234, finalAmount=27.00, orderType=GENERAL, orderLineItems=[OrderLineItem[item=Bananas, count=2, amount=2.00], OrderLineItem[item=Iphone Charger, count=1, amount=25.00]], orderedDateTime=2025-03-07T17:14:57.921089900]
+         * [orders]: store_1234, Order[orderId=54321, locationId=store_1234, finalAmount=15.00, orderType=RESTAURANT, orderLineItems=[OrderLineItem[item=Pizza, count=2, amount=12.00], OrderLineItem[item=Coffee, count=1, amount=3.00]], orderedDateTime=2025-03-07T17:14:57.921089900]
+         * [orders]: store_4567, Order[orderId=12345, locationId=store_4567, finalAmount=27.00, orderType=GENERAL, orderLineItems=[OrderLineItem[item=Bananas, count=2, amount=2.00], OrderLineItem[item=Iphone Charger, count=1, amount=25.00]], orderedDateTime=2025-03-07T17:14:57.921089900]
+         * [orders]: store_4567, Order[orderId=12345, locationId=store_4567, finalAmount=27.00, orderType=RESTAURANT, orderLineItems=[OrderLineItem[item=Bananas, count=2, amount=2.00], OrderLineItem[item=Iphone Charger, count=1, amount=25.00]], orderedDateTime=2025-03-07T17:14:57.922089]
+         */
         orderStream.print(Printed.<String,Order>toSysOut().withLabel(ORDERS));
 
-        /*KTable<String, Store> storeKTable=streamsBuilder
+        /**
+         * [stores]: store_1234, Store[locationId=store_1234, address=Address[addressLine1=1234 Street 1 , addressLine2=, city=City1, state=State1, zip=12345], contactNum=1234567890]
+         * [stores]: store_4567, Store[locationId=store_4567, address=Address[addressLine1=1234 Street 2 , addressLine2=, city=City2, state=State2, zip=541321], contactNum=0987654321]
+         */
+        KTable<String, Store> storeKTable=streamsBuilder
                     .table(STORES, Consumed.with(Serdes.String(),OrderSerdesFactory.storeSerde()),
                         Materialized.<String,Store,KeyValueStore<Bytes,byte[]>>as(STORES));
 
@@ -79,13 +89,15 @@ public class OrdersTopology {
 
 
 
-        exploreOrderCount(orderStream, generalPredicate, GENERAL_ORDERS_COUNT);
-        exploreOrderCount(orderStream, restaurantPredicate, RESTAURANT_ORDERS_COUNT);
+        //exploreOrderCount(orderStream, generalPredicate, GENERAL_ORDERS_COUNT);
+        //exploreOrderCount(orderStream, restaurantPredicate, RESTAURANT_ORDERS_COUNT);
 
         totalRevenue(orderStream,GENERAL_ORDERS_TOTAL_REVENUE,generalPredicate,storeKTable);
-        totalRevenue(orderStream,RESTAURANT_ORDERS_TOTAL_REVENUE,restaurantPredicate, storeKTable);*/
+        totalRevenue(orderStream,RESTAURANT_ORDERS_TOTAL_REVENUE,restaurantPredicate, storeKTable);
 
-        splitUsingBranched(orderStream, generalPredicate, restaurantPredicate);
+
+
+        //splitUsingBranched(orderStream, generalPredicate, restaurantPredicate);
 
         //mySplitUsingFilter(orderStream);
 
@@ -93,6 +105,7 @@ public class OrdersTopology {
         return streamsBuilder.build();
     }
 
+    // Predicate<? super String, ? super Order> generalPredicate, Predicate<? super String, ? super Order> restaurantPredicate
     //   tutorial way of doing the split of OrderStream into Two General and Restaurant and produce to two different kafka-topics
     private static void splitUsingBranched(KStream<String, Order> orderStream, Predicate<? super String, ? super Order> generalPredicate, Predicate<? super String, ? super Order> restaurantPredicate) {
 
@@ -291,10 +304,22 @@ public class OrdersTopology {
     /**
      * 13. Aggregation in Order Management Application - A Real Time Use Case
      * 2. Total Revenue made from the orders by each store using aggregate operator
-     * @param orderKStream
-     * @param orderTotalRevenue
+     * @param orderKStream  key is order_id and value as Order
+     * @param orderTotalRevenue     topic-name as well as store-name
      * @param predicateOrderType
-     * @param storeKtable
+     * @param storeKtable where  store-number as key and value as complete Store details
+     *
+     *  Materialized.<K,V,S>.as("State-Store-Name").withKeySerder().withValueSerde();
+     *  <K> – type of record key <V> – type of record value <S> – type of state store (note: state stores always have key/ value types <Bytes,byte[]>
+     *
+     *   [orders-general-total-revenue]: store_1234, TotalRevenue[locationId=store_1234, runningOrderCount=1, runningRevenue=27.00]
+     *   [orders-general-total-revenue]: store_4567, TotalRevenue[locationId=store_4567, runningOrderCount=1, runningRevenue=27.00]
+     *   [orders-restaurant-total-revenue]: store_1234, TotalRevenue[locationId=store_1234, runningOrderCount=1, runningRevenue=15.00]
+     *   [orders-restaurant-total-revenue]: store_4567, TotalRevenue[locationId=store_4567, runningOrderCount=1, runningRevenue=27.00]
+     *
+     *
+     *
+     *
      */
     private static void totalRevenue(KStream<String, Order> orderKStream, String orderTotalRevenue, Predicate<? super String,? super Order> predicateOrderType, KTable<String,Store> storeKtable){
 
@@ -304,7 +329,7 @@ public class OrdersTopology {
 
         KTable<String,TotalRevenue> aggregatedTotalRevenue=orderKStream
                 .filter(predicateOrderType)
-                //.map((key, value) -> KeyValue.pair(value.locationId(),value) )        // using map() to re-key the records since I am using selectKey() above
+                //.map((key, value) -> KeyValue.pair(value.locationId(),value) )        // using map() to re-key the records since I am using selectKey() above so i am commenting this statement. re-key to locationId from orderId.
                 .groupByKey(Grouped.with(Serdes.String(),OrderSerdesFactory.orderSerde()))
                 .aggregate(
                         totalRevenueInitializer,
@@ -322,13 +347,25 @@ public class OrdersTopology {
 
     }
 
-    // Now we have new business requirement we have to enrich the data with the store information
-    // like store address and store contact-number with the TotalRevenue of each store in a location
-    // Store information is not running data i.e. store information does not change often unless their phone number is changed or something like that
-    // so that's why the Store information will be held on KTable whereas TotalRevenue is continuously changing with
-    // each order places order number and total revenue from a store will change
-    // therefore TotalRevenue will be held on KStream
-    // KTable-KTable
+    /**
+     *     Now we have new business requirement we have to enrich the data with the store information
+     *      like store address and store contact-number with the TotalRevenue of each store in a location
+     *      Store information is not running data i.e. store information does not change often unless their phone number is changed or something like that
+     *      so that's why the Store information will be held on KTable whereas TotalRevenue is continuously changing with
+     *      each order places order number and total revenue from a store will change
+     *      therefore TotalRevenue will be held on KStream
+     *      KTable-KTable
+     *
+     *       Here Joining Type KStream-KTable  (KTable : Store, KStream : TotalRevenue) but using KTable for both.
+     *      16. Join in Order Management Application - A Real Time Use Case
+     *
+     *      OUTPUT in CONSOLE ::
+     *      [TOTAL-REVENUE-WITH-ADDRESS]: store_1234, TotalRevenueWithAddress[totalRevenue=TotalRevenue[locationId=store_1234, runningOrderCount=1, runningRevenue=27.00], store=Store[locationId=store_1234, address=Address[addressLine1=1234 Street 1 , addressLine2=, city=City1, state=State1, zip=12345], contactNum=1234567890]]
+     *      [TOTAL-REVENUE-WITH-ADDRESS]: store_4567, TotalRevenueWithAddress[totalRevenue=TotalRevenue[locationId=store_4567, runningOrderCount=1, runningRevenue=27.00], store=Store[locationId=store_4567, address=Address[addressLine1=1234 Street 2 , addressLine2=, city=City2, state=State2, zip=541321], contactNum=0987654321]]
+     *      [TOTAL-REVENUE-WITH-ADDRESS]: store_1234, TotalRevenueWithAddress[totalRevenue=TotalRevenue[locationId=store_1234, runningOrderCount=1, runningRevenue=15.00], store=Store[locationId=store_1234, address=Address[addressLine1=1234 Street 1 , addressLine2=, city=City1, state=State1, zip=12345], contactNum=1234567890]]
+     *      [TOTAL-REVENUE-WITH-ADDRESS]: store_4567, TotalRevenueWithAddress[totalRevenue=TotalRevenue[locationId=store_4567, runningOrderCount=1, runningRevenue=27.00], store=Store[locationId=store_4567, address=Address[addressLine1=1234 Street 2 , addressLine2=, city=City2, state=State2, zip=541321], contactNum=0987654321]]
+     *
+     */
     private static void totalRevenueWithADDress(KTable<String,TotalRevenue> totalRevenueKTable, KTable<String, Store> storeKTable){
 
         ValueJoiner<TotalRevenue,Store,TotalRevenueWithAddress> totalRevenueAddressValueJoiner= TotalRevenueWithAddress::new;
