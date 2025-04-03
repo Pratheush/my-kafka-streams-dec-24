@@ -244,22 +244,27 @@ OUTPUT CONSOLE ::: Join is not happening because two source topics have differen
 #### 1. Join Aggregate Revenue with StoreDetails KTable
 ![Joins In Order Management Service.png](screenshots%2F16.%20Join%20in%20Order%20Management%20Application%20-%20A%20Real%20Time%20Use%20Case%2FJoins%20In%20Order%20Management%20Service.png)
 
+### 17. StateFul Operations in Kafka Streams - Windowing
+#### 1. Introduction to Windowing and time concepts
+![windowing.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2Fwindowing.png)
 
+![Time Concepts.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FTime%20Concepts.png)
 
+![TimeStamp Extractor in KafkaStreams.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FTimeStamp%20Extractor%20in%20KafkaStreams.png)
+1. FailOnInvalidTimestamp Extractor is the default. This is going to log.error() when an Invalid Timestamp occurs. here StreamException is thrown
+2. LogAndSkipOnInvalidTimestamp extractor log.warn() when an invalid Timestamp occurs i.e. it will log the error and skip
+3. Wallclock Timestamp Extractor is used when we don't have concern over the Timestamp, and we need the time when record gets processed by Streams Application.
+4. 
 
+![WallClockTimestamp Extractor.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FWallClockTimestamp%20Extractor.png)
 
+![window types.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2Fwindow%20types.png)
 
+![Tumbling Window.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FTumbling%20Window.png)
 
+![Tumbling Window 2.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FTumbling%20Window%202.png)
 
-
-
-
-
-
-
-
-
-
+![RealTimeExampleTumblingWindow.png](screenshots%2F17.%20StateFul%20Operations%20in%20Kafka%20Streams%20-%20Windowing%2FRealTimeExampleTumblingWindow.png)
 
 
 
