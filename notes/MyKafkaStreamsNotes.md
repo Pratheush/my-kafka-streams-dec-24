@@ -15,6 +15,9 @@ mapValues ::
 
 flatMap ::
 ![flatMap.png](screenshots%2F4.%20Operators%20in%20Kafka%20Streams%20using%20KStream%20API%2FflatMap.png)
+* In this Example we have a String Apple lets say this is the event that is consumed by our kafka-stream application and then let's say you want to split into individual characters and have them send down-streams as individual events then we can use flatMap() operator
+
+* In reality this could be risk for each event that could return response which is list of certain types and you want to have those events list sent as individual events in your stream processing logic then in those kind of use-cases we can use flatMap() operator.
 
 flatMapValues ::
 ![flatMapValues.png](screenshots%2F4.%20Operators%20in%20Kafka%20Streams%20using%20KStream%20API%2FflatMapValues.png)

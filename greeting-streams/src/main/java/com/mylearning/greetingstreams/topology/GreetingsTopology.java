@@ -22,6 +22,13 @@ import java.util.List;
  * because when we are building Kafka Consumer and Producer API  we specifically call out the serializer and deserializer properties and provide the appropriate class for serialization and deserialization
  *
  * .\bin\windows\kafka-console-consumer.bat  --bootstrap-server localhost:9092 --topic greetings-uppercase
+ *
+ * when using flatMap() and merge()
+ * PRODUCER ::
+ * kafka-console-producer  --broker-list localhost:9092 --topic greetings --property "key.separator=-" --property "parse.key=true"
+ * kafka-console-producer --broker-list localhost:9092 --topic greetings-spanish --property "key.separator=-" --property "parse.key=true"
+ * CONSUMER ::
+ * kafka-console-consumer --bootstrap-server localhost:9092 --topic greetings-uppercase --from-beginning --property "key.separator=-" --property "print.key=true"
  */
 @Slf4j
 public class GreetingsTopology {
@@ -63,19 +70,21 @@ public class GreetingsTopology {
                     log.info("after filter > key : {}, value : {}",key,value);
                 }))*/
                 //.filterNot((key,value) -> value.length() > 5)
-                .mapValues((readOnlyKey, value) -> value.toUpperCase())
+                //.mapValues((readOnlyKey, value) -> value.toUpperCase())
                 .peek(((key, value) -> {
                     log.info("after mapValues > key : {}, value : {}",key,value);
                 }))
                 //        .map((key,value) -> KeyValue.pair(key.toUpperCase(), value.toUpperCase()))
-                        /*.flatMap((key,value) -> {
+                        .flatMap((key,value) -> {
                             List<String> newValues = Arrays.asList(value.split(""));
                             List<KeyValue<String, String>> keyValueList = newValues.stream()
                                     .map(val -> KeyValue.pair(key.toUpperCase(), val.toUpperCase()))
+                                    .peek(kv -> log.info("KeyValue - kv : {}",kv)) // KeyValue - kv : KeyValue(GM, G), .... KeyValue - kv : KeyValue(GM, O) and so on....
                                     .toList();
+                            log.info("Inside flatMap() KeyValueList : {}",keyValueList);   // [KeyValue(GM, G), KeyValue(GM, O), KeyValue(GM, O), KeyValue(GM, D), KeyValue(GM, M), KeyValue(GM, O), KeyValue(GM, R), KeyValue(GM, N), KeyValue(GM, I), KeyValue(GM, N), KeyValue(GM, G)]
                             return keyValueList;
-                        });*/
-                .flatMapValues((readOnlykey,value) -> {
+                        });
+                /*.flatMapValues((readOnlykey,value) -> {
                     List<String> newValues = Arrays.asList(value.split(""));
                     List<String> keyValueList = newValues.stream()
                             .map(String::toUpperCase)
@@ -85,7 +94,7 @@ public class GreetingsTopology {
                 .peek(((key, value) -> {
                     log.info("after flatMapValues > key : {}, value : {}",key,value);
                 }))
-                ;
+                ;*/
         
 
         // var mergedStream = getStringGreetingKStream(streamsBuilder);

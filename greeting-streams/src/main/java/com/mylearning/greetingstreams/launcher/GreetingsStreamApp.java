@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  * .\bin\windows\kafka-console-producer.bat --broker-list localhost:9092 --topic greetings-spanish-uppercase --property "key.separator=-" --property "parse.key=true"
  *
  * Command to consume with Key
- * .\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic greetings-uppercase --from-beginning -property "key.separator=-" --property "print.key=true"
+ * .\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic greetings-uppercase --from-beginning --property "key.separator=-" --property "print.key=true"
  *
  * Here I have configured partition to 2 that means 2 tasks will be created behind the scenes
  *
