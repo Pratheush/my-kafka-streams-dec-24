@@ -83,18 +83,18 @@ public class GreetingsTopology {
                                     .toList();
                             log.info("Inside flatMap() KeyValueList : {}",keyValueList);   // [KeyValue(GM, G), KeyValue(GM, O), KeyValue(GM, O), KeyValue(GM, D), KeyValue(GM, M), KeyValue(GM, O), KeyValue(GM, R), KeyValue(GM, N), KeyValue(GM, I), KeyValue(GM, N), KeyValue(GM, G)]
                             return keyValueList;
-                        });
+                        })
                 /*.flatMapValues((readOnlykey,value) -> {
                     List<String> newValues = Arrays.asList(value.split(""));
                     List<String> keyValueList = newValues.stream()
                             .map(String::toUpperCase)
                             .toList();
                     return keyValueList;
-                })
+                })*/
                 .peek(((key, value) -> {
-                    log.info("after flatMapValues > key : {}, value : {}",key,value);
+                    log.info("after flatMap > key : {}, value : {}",key,value);
                 }))
-                ;*/
+                ;
         
 
         // var mergedStream = getStringGreetingKStream(streamsBuilder);
@@ -108,6 +108,7 @@ public class GreetingsTopology {
         // var modifiedStream = exploreOperators(mergedStream);
         //var modifiedStream = exploreErrors(mergedStream);
 
+        modifiedStream.peek((k,v) -> log.info("Modified-Stream Key : {}, Value : {}",k,v));
         // anytime the message is modified it's going to print to the console with modifiedStream : this way we can look analyze how KafkaStreams is executing this topology
         modifiedStream.print(Printed.<String, String>toSysOut().withLabel("MODIFIED-STREAM-LABEL"));
         //modifiedStream.print(Printed.<String,Greeting>toSysOut().withLabel("modifiedStream"));
