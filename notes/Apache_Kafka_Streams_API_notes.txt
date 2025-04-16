@@ -448,7 +448,7 @@ important thing is when we return from the map() operator we need to return both
 
 mapValues:::::
 this is used when we have a usecase to transform just the values in the Kafka Stream.
-just like we din in the below 
+just like we did in the below 
 
 var modifiedStream=greetingsStream
               //  .filter((key, value) -> value.length()>5)   // this will filter out values less than 5 and pass only value length greater than 5
@@ -463,11 +463,36 @@ var modifiedStream=greetingsStream
 
 
 
+
+Use flatMap() when:
+You have nested structures (like List<List<T>>, Stream<Stream<T>>).
+You want to flatten them into a single level.
+
+List<List<String>> nestedList = Arrays.asList(
+                Arrays.asList("Apple", "Banana"),
+                Arrays.asList("Cat", "Dog"),
+                Arrays.asList("Elephant")
+        );
+
+        // Flattening using flatMap
+        List<String> flatList = nestedList.stream()
+                .flatMap(List::stream) // Stream<Stream<String>> → Stream<String>
+                .collect(Collectors.toList());
+
+        // Output
+        System.out.println("Flattened List: " + flatList);
+		
+output :: Flattened List: [Apple, Banana, Cat, Dog, Elephant]
+		
+
 flatMap :::::
 this operator can be used when a single event is going to create multiple possible events downstream
 using map we convert each value into a key-value pair
 flatMap takes care of flattening the collection here we are returning the list of key-value pairs
 but flatMap takes care of flattening the collection and send them as individual events downstream
+
+
+
 
 Apple ->> A P P L E
 
@@ -479,6 +504,9 @@ var modifiedStream=greetingsStream
 				var keyValueList= newValue.stream()
 											.map(v -> KeyValue.pair(key.toUpperCase(),v.toUpperCase()))
 											.collect(Collectors.toList());
+											
+				log.info("Inside flatMap() KeyValueList : {}",keyValueList);   // [KeyValue(GM, G), KeyValue(GM, O), KeyValue(GM, O), KeyValue(GM, D), KeyValue(GM, M), KeyValue(GM, O), KeyValue(GM, R), KeyValue(GM, N), KeyValue(GM, I), KeyValue(GM, N), KeyValue(GM, G)]	
+				
 				return keyValueList;
 				
 			 });
