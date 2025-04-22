@@ -1318,9 +1318,9 @@ A typical Kafka Streams Application has three components ::
 if we have sink processor we uses serialization process to write the data into the output Kafka-Topic
 this means that there are three places failures can happen
 
-1. Deserialization or Transient Errors at the entry Level. (transient error means temporary issue with bcoz of network connection or partition rebalance)
+1. Deserialization or Transient Errors at the entry Level. (transient error means temporary issue which bcoz of network connection or partition rebalance)
 
-2. RuntimeException in the Application Code (Topology) 
+2. RuntimeException in the Application Code (Topology) (any exception that our application run into due to logic)
 3. Serialization or Transient Errors when producing the data.
 
 
@@ -1328,7 +1328,7 @@ ErrorHandlers in KAFKA Streams :::
  for custom logic we can build our class implementing this ErrorHandler interfaces and wire that into our application
 ERROR ::::														Error Handler
 Deserialization													DeserializationExceptionHandler interface
-Application Error (Topology)								StreamsUncaughtExceptionHandler interface
+Application Error (At Topology Level)					StreamsUncaughtExceptionHandler interface
 Serialization														ProductionExceptionHandler interface 
 
 

@@ -36,10 +36,80 @@ what's needed to build a Custom Serde ?
 * Deserializer
 * Serde that holds the Serializer and Deserializer
 
+
 ### 7. Order Management Kafka Streams application - A real time use case
 ![Data Model For The Order.png](screenshots%2F7.%20Order%20Management%20Kafka%20Streams%20application%20-%20A%20real%20time%20use%20case%2FData%20Model%20For%20The%20Order.png)
 
 
+### 8. Topology, Stream and Tasks - Under the Hood
+![Topology.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Topology.png)
+
+1. How Kafka Streams Executes Topology
+![How KafkaStreams Executes Topology.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/How%20KafkaStreams%20Executes%20Topology.png)
+
+2. Tasks in Kafka Streams
+![Tasks.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Tasks.png)
+  * The benefit of creating tasks is that we can execute tasks in parallel by the Kafka Streams Application
+  * Kakfa Streams splits data into partitions inside the topic and each and every partition is independent of one another so when you have four tasks created in this example you can parallely process them to speed up the overall process.
+  * But the Parallelism in Kafka Streams Application is determined by Stream-Threads or we can also create multiple instances of Kafka-Stream Application.
+
+3. Threads in Kafka Streams
+![Threads in Kafka Streams.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Threads%20in%20Kafka%20Streams.png)
+
+4. By Default There is no parallelism
+![Default Stream Threads.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Default%20Stream%20Threads.png)
+Let's say we have Kafka Topic with 4 partitions.
+By Default There is no Parallelism in our Kafka Streams Application if Single instance of Kafka-Streams Application.
+
+5. Parallelism Approach 1 in Kafka Stream Application
+![Parallelism Approach 1.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Parallelism%20Approach%201.png)
+   if our KAFKA-topic has 4 partitions and our kafka stream application is streaming the topic and we have 4 tasks		then by default only one streams-thread is going to execute each tasks.
+   but if we increase the streams-thread by num.stream.threads property and seting up value to 4 i.e. 4 threads will be created with this setup all these 4 tasks are assigned to each and every threads and then each thread will execute the task individually and this is parallelism. this means that these 4 tasks execute the data from 4 partitions in parallel.
+
+6. Parallelism Approach 1 in Kafka Stream Application
+![Parallelism Approach 2.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Parallelism%20Approach%202.png)
+But if num.stream.threads property and setting up value to 2 thus 2 stream threads are created and then 4 tasks will be evenly split between  the 2 stream threads and executed by two available stream threads. and this way we achieve parallelism
+
+7. Parallelism Approach 2 By Multiple Instances of Kafka Stream Application
+![Parallelism Apprach Multiple Instances.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Parallelism%20Apprach%20Multiple%20Instances.png)
+If our KAFKA-topic has 4 partitions and our kafka stream application is streaming the topic and we have 4 tasks and if our kafka-streams applications multiple instances are running without setting up num.stream.threads property that means single stream-thread is running and executing tasks and this way we can achieve parallelism but each and every instance share the same application-id . in such setup tasks will be distributed to running multiple instances.
+
+8. Ideal Number of Stream Threads
+![Ideal Number of Stream Threads.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Ideal%20Number%20of%20Stream%20Threads.png)
+
+![KafkaStreams Consumer Group.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/KafkaStreams%20Consumer%20Group.png)
+
+9. CHECK THE num.stream.threads is changed
+we usually assign number of stream threads by setting Runtime.getRuntime().availableProcessors() at properties.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG,Runtime.getRuntime().availableProcessors())
+![Stream Threads Customize.png](screenshots/8.%20Topology%2C%20Stream%20and%20Tasks%20-%20Under%20the%20Hood/Stream%20Threads%20Customize.png)
+
+### 9. ErrorException Handling in Kafka Streams
+![Errors in Kafka Streams.png](screenshots/9.%20ErrorException%20Handling%20in%20Kafka%20Streams/Errors%20in%20Kafka%20Streams.png)
+
+![ErrorHandlers In Kafka Streams.png](screenshots/9.%20ErrorException%20Handling%20in%20Kafka%20Streams/ErrorHandlers%20In%20Kafka%20Streams.png)
+
+A typical Kafka Streams Application has three components ::
+1. Deserialization
+2. TOpology where our business logic resides
+3. Serialization
+
+
+if we have sink processor we uses serialization process to write the data into the output Kafka-Topic
+this means that there are three places failures can happen
+
+1. Deserialization or Transient Errors at the entry Level. (transient error means temporary issue which bcoz of network connection or partition rebalance)
+
+2. RuntimeException in the Application Code (Topology) (any exception that our application run into due to logic)
+3. Serialization or Transient Errors when producing the data.
+
+
+###### ErrorHandlers in KAFKA Streams :::
+For custom logic we can build our class implementing this ErrorHandler interfaces and wire that into our application
+
+ERROR ::::														Error Handler
+* Deserialization ::::												DeserializationExceptionHandler interface
+* Application Error (At Topology Level)	::::			            StreamsUncaughtExceptionHandler interface
+* Serialization	::::												ProductionExceptionHandler interface
 
 
 ### 10. KTable & Global KTable

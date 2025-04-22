@@ -109,12 +109,14 @@ public class OrdersTopology {
     //   tutorial way of doing the split of OrderStream into Two General and Restaurant and produce to two different kafka-topics
     private static void splitUsingBranched(KStream<String, Order> orderStream, Predicate<? super String, ? super Order> generalPredicate, Predicate<? super String, ? super Order> restaurantPredicate) {
 
-        // ValueMapper<Value,NewMappedOutPutValue> ValueMapper maps Value to NewMappedOutPutValue here i.e. from Order to Revenue.
+        // ValueMapper<InputValue,NewMappedOutPutValue> ValueMapper maps Value to NewMappedOutPutValue here i.e. from Order to Revenue.
         ValueMapper<Order,Revenue> revenueValueMapper=order -> new Revenue(order.locationId(), order.finalAmount());
 
         /**
          * Split this stream into different branches. The returned BranchedKStream instance can be used for routing
          * the records to different branches depending on evaluation against the supplied predicates.
+         *
+         * this split() allow us to apply some kind of branching strategy.
          *
          * BranchedKStream<K, V> branch(Predicate<? super K, ? super V> var1, Branched<K, V> var2);
          */
