@@ -45,7 +45,6 @@ public class ExploreJoinsOperatorsTopology {
      * this is also called innerJoin.
      * Join won't happen if the records from topics don't share the same key.
      *
-     *
      * so in case of join operation KStream with KTable
      * new events into the KTable doesn't trigger any join
      * but new events into the KSTREAM always trigger join if there is matching key is found in KTable
@@ -83,7 +82,7 @@ public class ExploreJoinsOperatorsTopology {
 
     /**
      * Here it works same as KStream and KTable Joining
-     * However when we are joining KStream with GlobalKTable then We need KeyValueMapper and ValueJoiner the reason is that GlobalKTable is the representation of all the data thats part of the KAFKA Topic
+     * However when we are joining KStream with GlobalKTable then We need KeyValueMapper and ValueJoiner the reason is that GlobalKTable is the representation of all the data that's part of the KAFKA Topic
      * it's not about a specific instance holding set of keys based on partition that particular task interacts with it's going to have whole representation in those kind of scenarios we need to provide
      * KeyValueMapper that's going to represent what the key is going to be in this case
      * @param streamsBuilder
@@ -113,19 +112,25 @@ public class ExploreJoinsOperatorsTopology {
          * it's not about a specific instance holding set of keys based on partition that particular task interacts with it's going to have whole representation in those kind of scenarios we need to provide
          * KeyValueMapper that's going to represent what the key is going to be in this case
          */
-        // <K> – key type <V> – value type <VR> – mapped value type ; :::: here below this leftKey is from KStream i.e. alphabetAbbrevationsKStream
-         KeyValueMapper<String,String,String> keyValueMapper= (leftKey, rightKey) -> leftKey;
+        // <K> – key type from KStream <V> – value type from KStream <VR> – mapped value type ; :::: here below this leftKey is key from KStream i.e. alphabetAbbrevationsKStream
+        KeyValueMapper<String,String,String> keyValueMapper= (leftKey, alphabetAbbrevationValue) -> leftKey;
        /* KeyValueMapper<String,String,String> keyValueMapper= (leftKey, rightKey) -> {
             if (leftKey.equals(rightKey)) return leftKey;
             else return  rightKey;
         };*/
 
-        //<V1> – first value type <V2> – second value type <VR> – joined value type
+        //<V1> – first value type from KStream <V2> – second value type from GlobalKTable <VR> – joined value type
         ValueJoiner<String, String, Alphabet> alphabetValueJoiner= Alphabet::new;
+        // ValueJoiner<String, String, Alphabet> alphabetValueJoiner= (stringAlphabetAbrevationValue, stringAlphabetDescriptionValue) -> new Alphabet(stringAlphabetAbrevationValue, stringAlphabetDescriptionValue);
 
         KStream<String,Alphabet> joinedStream=alphabetAbbrevationsKStream
                 .join(alphabetGlobalKTable,keyValueMapper,alphabetValueJoiner);
 
+        /**
+         * since new events in KStream trigger join operation but new events in GlobalKTable does not trigger join operation.
+         *  whenever data is present or arrived in ALPHABETS_ABBREVIATIONS topic then only join operation is triggered since only two data is present in KStream so
+         *  with the record with matching key from KTable two times result is produced
+         */
         // [JOINED-STREAM]: A, Alphabet[abbreviation=Apple, description=A is the first letter in English Alphabets.]
         // [JOINED-STREAM]: B, Alphabet[abbreviation=Bus, description=B is the second letter in English Alphabets.]
         joinedStream
@@ -165,6 +170,12 @@ public class ExploreJoinsOperatorsTopology {
         KTable<String,Alphabet> joinedStream=alphabetAbbrevationsKTable
                 .join(alphabetKTable,alphabetValueJoiner);
 
+        /**
+         * irrespective of whether the data or event is present in ALPHABETS_ABBREVIATIONS Topic (KTable1) or
+         * data is present in ALPHABETS Topic (KTable2) it's going to trigger join operation
+         * thus getting output produced for that number of events occurred i.e. if two events arrived or present in topic1 then it will trigger join operation two times and
+         * when two more events arrived or present in topic2 then it will trigger join operation again two more times thus produced output will be four times.
+         */
         // [JOINED-STREAM]: A, Alphabet[abbreviation=Apple, description=A is the first letter in English Alphabets.]
         // [JOINED-STREAM]: B, Alphabet[abbreviation=Bus, description=B is the second letter in English Alphabets.]
         // [JOINED-STREAM]: B, Alphabet[abbreviation=Bus, description=B is the second letter in English Alphabets.]
@@ -195,16 +206,18 @@ public class ExploreJoinsOperatorsTopology {
          * A KStream is an infinite stream which represents a log of everything that happened
          *
          * JoinWindows:::
-         * It is expected that they both share the same key, and also it should be in certain time window( there is a time window defined within the time window those events should be part of the KStream events )
+         * It is expected that they both share the same key, and also it should be in certain time window( there is a time window
+         * defined within the time window those events should be part of the KStream events )
          *
          * so by default any records that gets produced in the KAFKA Topic gets a timestamp attached to it
          *
-         *
          * what is the type of join-params
-         * StreamJoined<K,V1,V2> this class using which we can provide what the key-value and returned type is going to be
+         * StreamJoined<K,V1,V2> this class using which we can provide what the key-value type and value type of other stream is going to be
          *
-         * if the primary stream begins a window within the 5-second window (here 5-second window is specified as JoinWindows ) which is back and forth which means like if the time is 5:00:00 of the event in primary stream then secondary stream event comes in between 4:59:56 (4pm59 minutes and 56 seconds) and 5:00:04 (5 pm 00 minutes and 04 seconds )within that window back and forth
-         * if the event comes in the secondary stream then two events or messages from two KStreams will be joined when they both have same matching key
+         * if the primary stream begins and a window defined is the 5-second window (here 5-second window is specified as JoinWindows ) which is back
+         * and forth which means like if the primary or first event occurred at o time is 5:00:00 of the event in primary stream then secondary stream
+         * event should be occurring comes in between 4:59:56 (4pm59 minutes and 56 seconds) and 5:00:05 (5 pm 00 minutes and 05 seconds )within that window back and forth
+         * if the second event comes in the secondary stream then two events or messages from two KStreams will be joined when they both have same matching key
          */
 
         //<V1> – first value type <V2> – second value type <VR> – joined value type
@@ -213,12 +226,9 @@ public class ExploreJoinsOperatorsTopology {
         JoinWindows fiveSecondWindow = JoinWindows.ofTimeDifferenceWithNoGrace(Duration.ofSeconds(5));
 
         /**
-         * WHat is the type of Join Params
-         * Class used to configure the name of the join processor, the repartition topic name, state stores or state store names in Stream-Stream join.
-         * Type parameters: * <K> – the key type <V1> – this value type <V2> – other value type
          *
-         * StreamJoined is a class that provides utility methods to define the serdes (serializer/deserializer) used when joining two KStreams or KTables.
-         * Serdes.String() is a built-in serde for handling strings. It’s being used here for both the keys and values of the streams or tables being joined.
+         * StreamJoined is a class that provides utility methods to define the serdes (serializer/deserializer) used when joining two KStreams.
+         * Serdes.String() is a built-in serde for handling strings. It’s being used here for both the keys and values of the streams that are been joined.
          * StreamJoined.with() is a static factory method that creates a new StreamJoined instance with the specified key, value, and other serdes.
          * In this case, streamJoined is an instance of StreamJoined configured to use String serdes for both keys and values of the joining streams/tables.
          *
@@ -271,7 +281,7 @@ public class ExploreJoinsOperatorsTopology {
          * if there is no matching record on the right side, then the join will be triggered with null value for the right side value
          * here right is Alphabet with key = A, value = A is the first letter in English Alphabets
          * here left is Alphabet-Abbreviations with key = A, value = Apple
-         * when both sides matching records then it will trigger join normally.
+         * when both sides matching records then it will trigger join work as usual.
          */
         joinedStream
                 .print(Printed.<String,Alphabet>toSysOut().withLabel(JOINED_STREAM));

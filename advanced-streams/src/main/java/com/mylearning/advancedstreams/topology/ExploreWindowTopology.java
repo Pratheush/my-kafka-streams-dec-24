@@ -7,6 +7,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -43,14 +44,18 @@ public class ExploreWindowTopology {
                 .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded().shutDownWhenFull()));
 
         // in reality, we can publish the windowedKTable to downstream Kafka-Topic. here we are just printing in console.
-        // to show the timestamp of each and every window gets created. we can see what the windowed key is look like which is of type windowed<String> and long value is the count of each and every key in the given window.
+        // to show the timestamp of each and every window gets created. we can see what the windowed key is look like which is of type windowed<String>
+        // and long value is the count of each and every key in the given window.
+        /**
+         * since usage of suppress() makes sure that records are going to be sent downstream only when the window is exhausted.
+         */
         windowedKTable
                 .toStream()
-                .peek(((key, value) -> {
+                .peek((key, value) -> {
                     log.info("tumblingWindow :: key : {} , value : {}",key,value);
                     // going to print the local date time
                     printLocalDateTimes(key,value);
-                }))
+                })
                 .print(Printed.<Windowed<String>,Long>toSysOut().withLabel(WINDOW_WORDS));
     }
 
@@ -87,7 +92,7 @@ public class ExploreWindowTopology {
 
         Duration fiveSecondWindowSize = Duration.ofSeconds(5);
 
-        var slidingWindow = SlidingWindows.ofTimeDifferenceWithNoGrace(fiveSecondWindowSize);
+        SlidingWindows slidingWindow = SlidingWindows.ofTimeDifferenceWithNoGrace(fiveSecondWindowSize);
 
         // KTable is of type KTable<Windowed<String>,Long> so the Key <Windowed<String> of this windowedBy() operation.
         KTable<Windowed<String>, Long> windowedKTable = wordKStream
@@ -112,8 +117,8 @@ public class ExploreWindowTopology {
 
     // each window has startTime and endTime
     private static void printLocalDateTimes(Windowed<String> key, Long value) {
-        var startTime = key.window().startTime(); // startTime type is Instant
-        var endTime = key.window().endTime();   // any time windows are created it is going to be in gmt time not the localTime
+        Instant startTime = key.window().startTime(); // startTime type is Instant
+        Instant endTime = key.window().endTime();   // any time windows are created it is going to be in gmt time not the localTime
         log.info("startTime : {}, endTime : {}, Count : {}", startTime, endTime, value); // here printing the instant startTime and endTime  :: windowed key startTime and endTime are in gmt format
 
         // converting the instant value into local timestamp using zone since i am in IST i.e entry("IST", "Asia/Kolkata"),. we can get the code by clicking into SHORT_IDS

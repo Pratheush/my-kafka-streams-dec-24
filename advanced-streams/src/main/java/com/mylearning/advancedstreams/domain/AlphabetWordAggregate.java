@@ -15,16 +15,15 @@ import java.util.Set;
  *  Primary Constructor: The record automatically generates a constructor that accepts all fields:
  *  public AlphabetWordAggregate(String key, Set<String> valueList, int runningCount);
  *
- *
  *  Default Constructor: creates an empty instance
  *  This constructor initializes the key to an empty string, valueList to an empty HashSet, and runningCount to 0. It calls the primary constructor using this.
  *  public AlphabetWordAggregate() {
  *     this("", new HashSet<>(), 0);
  * }
  *
- *
  * updateNewEvents method provides functionality to update the state of the object and return a new updated instance.
- * This method updates the AlphabetWordAggregate by adding a new value to the valueList and increments the runningCount. It creates a new instance of AlphabetWordAggregate with the updated values and returns it.
+ * This method updates the AlphabetWordAggregate by adding a new value to the valueList and increments the runningCount.
+ * It creates a new instance of AlphabetWordAggregate with the updated values and returns it.
  * Logs the current state and the new record.
  * Increments runningCount by 1.
  * Adds newValue to valueList.
@@ -40,7 +39,6 @@ import java.util.Set;
  *     log.info("aggregated : {}" , aggregated);
  *     return aggregated;
  * }
- *
  *
  * The main method is the entry point of the program. It creates an instance of AlphabetWordAggregate using the default constructor.
  * The main method does not perform additional operations in this code snippet, but it sets up the initial object.

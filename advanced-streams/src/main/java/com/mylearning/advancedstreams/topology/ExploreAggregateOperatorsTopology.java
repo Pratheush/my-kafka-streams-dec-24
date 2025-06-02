@@ -37,7 +37,7 @@ public class ExploreAggregateOperatorsTopology {
          **/
         KGroupedStream<String,String> groupedString = inputStream
                 .groupByKey(Grouped.with(Serdes.String(), Serdes.String())) // here key is same as in Kafka Records from Internal Kafka Topic
-                //        .groupBy((key, value) -> value.toUpperCase() ,                // here key is now changed value has become key and below type of key-value is provided which is recommended. so running producer for one time application will get Apple -1,Alligator-1,Ambulance-1 so Apple is key and 1 will be count.
+                //        .groupBy((key, value) -> value.toUpperCase() ,   // here key is now changed value has become key and below type of key-value is provided which is recommended. so running producer for one time application will get Apple -1,Alligator-1,Ambulance-1 so Apple is key and 1 will be count.
                   //              Grouped.with(Serdes.String(),Serdes.String())) // group type is defined for groupBy() operation.
                 ;
 
@@ -91,7 +91,8 @@ public class ExploreAggregateOperatorsTopology {
      *  behind the scenes Kafka Stream did create  internal Kafka Topic and stored the complete state over there
      *  for FaultTolerance and retention so anytime we restart our kafka-streaming application this is one of
      *  the ways getting the previous state and load the state into our kafka-streaming application.
-     *  reduce() operator returns KTable of Type as Value Type. i.e. here value of KGroupedStream is of Type String so reduce() returns KTable of type String as value is String type.
+     *  reduce() operator returns KTable of Type as Value Type. i.e. here value of KGroupedStream is of Type String
+     *  so reduce() returns KTable of type String as value is String type.
      *  reduce() operator cannot return other type other than value type used in there reduce() operator
      *  so if we want to reduce() operator to return length of the value then it will give error, but it can be done using aggregate() operator
      */
@@ -127,19 +128,26 @@ public class ExploreAggregateOperatorsTopology {
                 (key, value, alphabetWordAggregate) -> alphabetWordAggregate.updateNewEvents(key, value);
         /**
          * since we are changing the type from one to another because we are changing from type String to AlphabetWordAggregate
-         * the better option is to provide Materialized view. Materialized is one of the option of providing our own State Store instead of Kafka taking care to create that State Store for us.
-         * Materialized.<String,AlphabetWordAggregate >as("aggregated-store") first is key second is the value  third is providing what kind of state store we are going to use.
+         * the better option is to provide Materialized view. Materialized is one of the option of providing our own State Store instead of Kafka taking care to
+         * create that State Store for us.
+         *
+         * Materialized.<String,AlphabetWordAggregate,KeyValueStore<Bytes,byte[]>>as("aggregated-store") first is key second is the value and
+         * third is providing what kind of state store we are going to use.
+         *
          * materializing the aggregated value to a stateStore
          * as this is needed anytime the application is restarted and the app needs to reconstruct whole stream / state
-         * the reason why Materialized is used in this use-case  not for the other one is that because the type here is going to be little different because the value is going to be new object or a new type.
-         * it's not going to be String anymore .that is why we are using materialized . so in aggregate operator we have to use Materialized view but in count and reduce operator if we don't use Materialized then there won't be any problems.
+         * the reason why Materialized is used in this use-case  not for the other one is that because the type here is going to be little different because the value is
+         * going to be new object or a new type. it's not going to be String anymore .that is why we are using materialized . so in aggregate operator we have to use
+         * Materialized view but in count and reduce operator if we don't use Materialized then there won't be any problems.
          * advantage of using Materialized views when saving the state of the Aggregated Operation
          *
-         * Earlier in exploreCount() and exploreReduce() function we didn't provide Materialized so what KafkaStreams behind the scenes did that it created an internal Kafka Topic
-         * and store the complete state over there in the Internal Topic which is created for fault Tolerance and Retention.
-         *  But In aggregate() operation we are taking control of it.
+         * Earlier in exploreCount() and exploreReduce() function we didn't provide Materialized so what KafkaStreams did behind the scenes is that it created an
+         * internal Kafka Topic and store the complete state over there in the Internal Topic which is created for fault Tolerance and Retention.
+         *  But In aggregate() operation we are taking control of it we are deciding what name should be for the internal topic which is going to be created behind the scenes.
          *
-         *  Materialized.<Key-Type, Value-Type, What-Kind-of-StateStore-We-are-going-to-Use> and KeyValueStore<Bytes,byte[]> here key is going to be Bytes type and byte[] is going to be value type.
+         *  Materialized.<Key-Type, Value-Type, What-Kind-of-StateStore-We-are-going-to-Use> and KeyValueStore<Bytes,byte[]>
+         *      here key is going to be Bytes type and byte[] is going to be value type.
+         *
          *  Materialized.<String,AlphabetWordAggregate, KeyValueStore<Bytes,byte[]>>. Here KeyValueStore is a kind of State Store we are going to use
          */
         KTable<String,AlphabetWordAggregate>alphabetWordAggregateKTable=groupedStream

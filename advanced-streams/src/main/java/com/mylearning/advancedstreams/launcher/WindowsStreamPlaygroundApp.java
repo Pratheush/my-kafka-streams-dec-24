@@ -25,7 +25,7 @@ public class WindowsStreamPlaygroundApp {
         config.put(StreamsConfig.APPLICATION_ID_CONFIG, "windows-2"); // consumer group
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "0"); // the window aggregated data is emitted every 10 seconds i.e. you can check the console for peek log there is a difference of 10 seconds.
+        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "0"); // the window aggregated data is emitted every 10 seconds i.e. you can check the console for peek log there is a difference of 10 seconds. but here value 10 is changed to 0 to see the result with expected behavior using suppress()
 
         createTopics(config, List.of(ExploreWindowTopology.WINDOW_WORDS ));
         var kafkaStreams = new KafkaStreams(joinTopology, config);

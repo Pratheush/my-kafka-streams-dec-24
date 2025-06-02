@@ -1812,7 +1812,7 @@ so KTable is an API we use when we want to see latest value for any given key
 
 When does KTable decides to emit the data(records) to the downstream nodes ?
 There are two configurations that controls this ::
-	1. cache.max.bytes.buffering : this means KTable uses cache internally for de-duplication and cache serves as a buffer 
+	1. cache.max.bytes.buffering : this means KTable uses cache internally for de-duplication and cache also serves as a buffer 
 	2. commit.interval.ms 
 
 
@@ -1868,7 +1868,7 @@ so these are the updated values for the given key thats been published
 these are different values that are the part of KTable which is present in the changelog topic 
 
 when we restart the application what this is going to do is this is going to Kafka-topic and get
-all the values for this state store which is here is words-store and its going to match with this 
+all the values for this state store which is here is words-store and its going to match the name  of state-store with the 
 changelog topic and adds the changelog topic .so when this KTable gets created it knows what is the previous value for the key A and B  .so its going to read all the values for the given key and value and its going to get the updated value for the given key.
 
 
