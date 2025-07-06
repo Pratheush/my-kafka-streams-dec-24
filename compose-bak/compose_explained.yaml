@@ -18,18 +18,14 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092" # For external clients
-      - "9101:9101" # For JMX monitoring
+      - "9092:9092"
+      - "9101:9101"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      # 🟢 Define listener names and protocols
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-       # 🟢 Bind Kafka listeners
       KAFKA_LISTENERS: INTERNAL://broker:29092,EXTERNAL://0.0.0.0:9092
-       # 🟢 Advertised addresses for external/internal
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:29092,EXTERNAL://localhost:9092
-      # 🟢 Choose inter-broker communication listener
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

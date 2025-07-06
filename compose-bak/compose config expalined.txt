@@ -1,0 +1,72 @@
+KAFKA_ADVERTISED_LISTENERS: Tells Kafka what address it should tell clients to use.
+
+KAFKA_LISTENERS: What address/interface Kafka actually binds to.
+
+KAFKA_INTER_BROKER_LISTENER_NAME: Tells Kafka which listener to use for communication between brokers. Must match one of the names defined in KAFKA_ADVERTISED_LISTENERS.
+
+
+
+KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
+This must match exactly the name of the listener defined in KAFKA_ADVERTISED_LISTENERS.
+
+
+
+ Only one of inter.broker.listener.name and security.inter.broker.protocol should be set
+KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
+KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SSL
+
+
+
+java.lang.IllegalArgumentException: requirement failed: Each listener must have a different name, listeners: SSL://broker:29092,SSL://0.0.0.0:9093
+
+
+org.apache.kafka.common.config.ConfigException: Invalid value SSLINTERNAL for configuration security.inter.broker.protocol: String must be one of: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL
+
+
+
+======================================================================================================================================================
+
+
+Since your **Kafka broker is running inside Docker** and your **Spring Boot client is running locally**, the **Subject Alternative Name (SAN)** should include both:
+- The **Docker container hostname** (e.g., `broker`)
+- The **host machine's IP address** (so the Spring Boot client can connect)
+- `localhost` (if needed for local testing)
+
+Here’s how you can modify your command:
+
+```bash
+keytool -genkey -alias broker -keystore kafka.broker.keystore.jks -keyalg RSA -validity 365 \
+-storepass password -keypass password -ext SAN=dns:broker,dns:localhost,ip:192.168.1.100
+```
+
+Where:
+- `dns:broker` ensures the certificate is valid for the **Docker container hostname**.
+- `dns:localhost` allows local connections.
+- `ip:192.168.1.100` (replace with your actual host IP) ensures external clients can connect.
+
+For the **Spring Boot client**, it should trust the broker’s certificate. You’ll need to:
+1. Export the broker’s certificate:
+   ```bash
+   keytool -export -alias broker -keystore kafka.broker.keystore.jks -file broker.cer
+   ```
+2. Import it into the client’s truststore:
+   ```bash
+   keytool -import -alias broker -file broker.cer -keystore client.truststore.jks
+   ```
+
+If your setup involves **Kubernetes**, you may need additional SAN entries for **pod hostnames** and **service names**. Let me know if you need help refining this further!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

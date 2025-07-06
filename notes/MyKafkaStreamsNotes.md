@@ -1648,12 +1648,46 @@ TOPOLOGY METHOD WITH AGGREGATION AND JOIN
 }
 
 ```
+### 19. Behavior of Records with Future & Older Timestamp in Windowing
+##### 1. Records with timestamps before & after the CurrentTimestamp.
+```
+2025-06-02 18:08:29.525 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-1] INFO  c.m.o.topology.OrdersTopology - KEY :: store_4567, ORDER-VALUE : Order[orderId=12345, locationId=store_4567, finalAmount=27.00, orderType=RESTAURANT, orderLineItems=[OrderLineItem[item=Bananas, count=2, amount=2.00], OrderLineItem[item=Iphone Charger, count=1, amount=25.00]], orderedDateTime=2025-06-01T18:08:28.637725]
+2025-06-02 18:08:29.619 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-2] WARN  o.a.k.s.k.i.KStreamWindowAggregate - Skipping record for expired window. topic=[orders-app-orders-restaurant-revenue-window-repartition] partition=[0] offset=[36] timestamp=[1748781508637] window=[1748781495000,1748781510000) expiration=[1748954199306] streamTime=[1748954199306]
+2025-06-02 18:08:29.619 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-2] WARN  o.a.k.s.k.i.KStreamWindowAggregate - Skipping record for expired window. topic=[orders-app-orders-restaurant-revenue-window-repartition] partition=[0] offset=[37] timestamp=[1748781508637] window=[1748781495000,1748781510000) expiration=[1748954199306] streamTime=[1748954199306]
+2025-06-02 18:08:29.620 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-1] WARN  o.a.k.s.k.i.KStreamWindowAggregate - Skipping record for expired window. topic=[orders-app-orders-general-revenue-window-repartition] partition=[0] offset=[36] timestamp=[1748781508637] window=[1748781495000,1748781510000) expiration=[1748954199306] streamTime=[1748954199306]
+2025-06-02 18:08:29.621 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-1] WARN  o.a.k.s.k.i.KStreamWindowAggregate - Skipping record for expired window. topic=[orders-app-orders-general-revenue-window-repartition] partition=[0] offset=[37] timestamp=[1748781508637] window=[1748781495000,1748781510000) expiration=[1748954199306] streamTime=[1748954199306]
+2025-06-02 18:08:29.951 [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-2] INFO  o.a.k.s.p.internals.StreamThread - stream-thread [orders-app-d05d5747-571b-4bd2-ab1e-f1c3e32566b1-StreamThread-2] Processed 8 total records, ran 0 punctuators, and committed 2 total tasks since the last update
 
+```
+* the current timestamp of these windows where current timestamp is :: 2025-06-02 18:08:29.423
+  so any record prior to this window will be skipped for expired window
+  so anytime we notice this logger in application the reason is because the timestamp of the records we recived is lesser than the current latest window
 
+* it creates windows for the future records even though the current timestamp is lesser than record timestamp
+* kafka stream basically go ahead and creates the windows for future records
+* if we publish old record with window lesser than the current timestamp window then records will be skipped as current timestamp is higher than records timestamp.
 
+### 20. Build Kafka Streams Application using SpringBoot
+![KafkaStream App Using SpringBoot.png](screenshots/20.%20Build%20Kafka%20Streams%20Application%20using%20SpringBoot/KafkaStream%20App%20Using%20SpringBoot.png)
 
+KafkaStreams using SpringBoot
+How AutoConfiguration works ?
+* Adding the annotation @EnableKafkaStreams is going to invoke the KafkaStreamsDefaultConfiguration class
+   * KafkaStreamsAnnotationDrivenConfiguration supplies the KafkaStreamsConfiguration bean
+   * This class takes care of building the StreamsBuilderFactoryBean which is responsible for supplying the StreamsBuilder instance.
+      * This StreamsBuilderFactoryBean class also takes care of managing the Lifecycle of the KafkaStreams App.
 
+###### application.yml :: 
+below configuration setup profile local as active
+spring.profiles.active = local
 
+spring.config.activate.on-profile = local
+
+this configuration tells when local profile is active go ahead and use all the config in this section.
+
+under spring i.e. spring.kafka we set up all the config properies we need for the KafkaStream application.
+
+setup application environment profiles that we can use later when we launch application we need to provide spring.profile.active = local to activate the profile based environment configuration
 
 
 
